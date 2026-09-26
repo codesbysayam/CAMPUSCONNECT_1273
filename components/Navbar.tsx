@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from './AuthProvider'
+import ThemeToggle from './ThemeToggle'
 
 const LINKS = [
   { href: '/', label: 'Home' },
@@ -98,38 +99,41 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 13,
-            color: 'var(--ink-soft)',
-          }}
-        >
-          <span className="eyebrow-tag" style={{ whiteSpace: 'nowrap' }}>
-            {currentUser.role}
-          </span>
-          <select
-            aria-label="Switch current user"
-            value={currentUser.id}
-            onChange={(e) => setCurrentUserId(e.target.value)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ThemeToggle />
+          <label
             style={{
-              border: '1.5px solid var(--line)',
-              borderRadius: 'var(--radius)',
-              padding: '6px 8px',
-              fontSize: 13.5,
-              background: 'var(--paper-raised)',
-              color: 'var(--ink)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 13,
+              color: 'var(--ink-soft)',
             }}
           >
-            {allUsers.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            <span className="eyebrow-tag" style={{ whiteSpace: 'nowrap' }}>
+              {currentUser.role}
+            </span>
+            <select
+              aria-label="Switch current user"
+              value={currentUser.id}
+              onChange={(e) => setCurrentUserId(e.target.value)}
+              style={{
+                border: '1.5px solid var(--line)',
+                borderRadius: 'var(--radius)',
+                padding: '6px 8px',
+                fontSize: 13.5,
+                background: 'var(--paper-raised)',
+                color: 'var(--ink)',
+              }}
+            >
+              {allUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
     </header>
   )

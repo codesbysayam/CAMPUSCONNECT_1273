@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { CampusEvent, TODAY } from '@/data/events'
-import StatusBadge from './StatusBadge'
 
 interface CalendarViewProps {
   events: CampusEvent[]
@@ -112,7 +111,7 @@ export default function CalendarView({ events }: CalendarViewProps) {
         overflow: 'hidden',
       }}
     >
-      {/* Calendar Header */}
+      {/* Calendar Header with Month/Year and < / > buttons */}
       <div
         style={{
           display: 'flex',
@@ -123,46 +122,70 @@ export default function CalendarView({ events }: CalendarViewProps) {
           marginBottom: 20,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handlePrevMonth}
+              style={{
+                width: 36,
+                height: 36,
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              aria-label="Previous month"
+              title="Previous month"
+            >
+              &lt;
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleNextMonth}
+              style={{
+                width: 36,
+                height: 36,
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              aria-label="Next month"
+              title="Next month"
+            >
+              &gt;
+            </button>
+          </div>
+
           <h2
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 22,
               fontWeight: 700,
+              margin: 0,
             }}
           >
             {monthNames[month]} {year}
           </h2>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handleCurrentMonth}
-            style={{ padding: '4px 10px', fontSize: 12 }}
-          >
-            Today (16 Sep)
-          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handlePrevMonth}
-            style={{ padding: '6px 14px', fontSize: 14 }}
-            aria-label="Previous month"
-          >
-            ← Prev
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handleNextMonth}
-            style={{ padding: '6px 14px', fontSize: 14 }}
-            aria-label="Next month"
-          >
-            Next →
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleCurrentMonth}
+          style={{ padding: '6px 14px', fontSize: 13 }}
+        >
+          Today
+        </button>
       </div>
 
       {/* Weekday Names Header */}
@@ -207,9 +230,9 @@ export default function CalendarView({ events }: CalendarViewProps) {
               style={{
                 background: cell.isCurrentMonth
                   ? isCellToday
-                    ? '#fffdf5'
+                    ? 'var(--paper)'
                     : 'var(--paper-raised)'
-                  : '#f7f5ef',
+                  : 'var(--paper)',
                 minHeight: 110,
                 padding: '8px 6px',
                 display: 'flex',
@@ -270,8 +293,8 @@ export default function CalendarView({ events }: CalendarViewProps) {
                 {cell.events.map((ev) => {
                   const colors =
                     CATEGORY_COLORS[ev.category] || {
-                      bg: '#f1f1f1',
-                      text: '#333',
+                      bg: 'var(--line)',
+                      text: 'var(--ink)',
                     }
                   const time = new Date(ev.date).toLocaleTimeString('en-IN', {
                     hour: 'numeric',

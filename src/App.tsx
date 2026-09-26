@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { ThemeProvider } from '@/components/ThemeProvider'
 import { AuthProvider } from '@/components/AuthProvider'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -53,10 +54,12 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <Navbar />
-      <main style={{ minHeight: '70vh' }}>{renderPage()}</main>
-      <Footer />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Navbar />
+        <main style={{ minHeight: '70vh' }}>{renderPage()}</main>
+        <Footer />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

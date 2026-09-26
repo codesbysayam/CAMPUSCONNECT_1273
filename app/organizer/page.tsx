@@ -3,11 +3,23 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import { events, CampusEvent } from '@/data/events'
+import { events, CampusEvent, isPastEvent } from '@/data/events'
 import EmptyState from '@/components/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
 import EventForm from '@/components/EventForm'
 import { apiRequest } from '@/lib/api'
+
+function sortOrganizerEvents(eventsList: CampusEvent[]) {
+  return [...eventsList].sort((a, b) => {
+    const aClosed = Boolean(a.cancelled) || isPastEvent(a)
+    const bClosed = Boolean(b.cancelled) || isPastEvent(b)
+
+    if (aClosed && !bClosed) return 1
+    if (!aClosed && bClosed) return -1
+
+    return 0
+  })
+}
 
 export default function OrganizerPage() {
   const { currentUser } = useAuth()
@@ -26,7 +38,9 @@ export default function OrganizerPage() {
     )
   }
 
-  const myEvents = events.filter((e) => e.organizerId === currentUser.id)
+  const myEvents = sortOrganizerEvents(
+    events.filter((e) => e.organizerId === currentUser.id),
+  )
 
   const handleCancelEvent = async (event: CampusEvent) => {
     if (event.cancelled) return
