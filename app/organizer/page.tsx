@@ -27,7 +27,7 @@ export default function OrganizerPage() {
   const [editingEvent, setEditingEvent] = useState<CampusEvent | null>(null)
   const [, setTick] = useState(0)
 
-  if (currentUser.role !== 'organizer') {
+  if (!currentUser || currentUser.role !== 'organizer') {
     return (
       <section className="shell" style={{ padding: '56px 0' }}>
         <EmptyState

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from './AuthProvider'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
 import { hasActiveRegistration } from '@/data/registrations'
@@ -23,11 +24,26 @@ export default function RegisterButton({
   const event = getEventById(eventId)
   if (!event) return null
 
+  if (!currentUser) {
+    return (
+      <div style={{ marginTop: 4 }}>
+        <Link
+          href="/login/student"
+          className="btn btn-primary"
+          style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
+        >
+          Sign In as Student to Register →
+        </Link>
+      </div>
+    )
+  }
+
   const isStudent = currentUser.role === 'student'
   const past = isPastEvent(event)
   const full = isFullEvent(event)
   const alreadyRegistered = hasActiveRegistration(currentUser.id, eventId)
-  const canRegister = isStudent && !past && !full && !event.cancelled && !alreadyRegistered
+  const canRegister =
+    isStudent && !past && !full && !event.cancelled && !alreadyRegistered
 
   let buttonText = 'Register'
   if (alreadyRegistered) {
@@ -43,7 +59,7 @@ export default function RegisterButton({
   }
 
   async function handleRegister() {
-    if (!canRegister || submitting) return
+    if (!currentUser || !canRegister || submitting) return
 
     setError(null)
     setSubmitting(true)
@@ -72,7 +88,9 @@ export default function RegisterButton({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}
+    >
       <button
         className="btn btn-primary"
         disabled={!canRegister || submitting}

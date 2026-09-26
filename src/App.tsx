@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { AuthProvider } from '@/components/AuthProvider'
+import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import HomePage from '@/app/page'
@@ -14,8 +14,64 @@ import EventDetailPage from '@/app/events/[id]/page'
 import OrganizerPage from '@/app/organizer/page'
 import RegistrationsPage from '@/app/registrations/page'
 import LoginPage from '@/app/login/page'
-import StudentLoginPage from '@/app/login/student/page'
-import OrganizerLoginPage from '@/app/login/organizer/page'
+
+function AppContent({ pathname }: { pathname: string }) {
+  const { currentUser } = useAuth()
+  const normalized = pathname.replace(/\/$/, '') || '/'
+
+  // When not logged in, directly show the unified login page
+  if (!currentUser) {
+    if (normalized === '/login/student') {
+      return <LoginPage initialRole="student" />
+    }
+    if (
+      normalized === '/login/organizer' ||
+      normalized === '/login/organiser'
+    ) {
+      return <LoginPage initialRole="organizer" />
+    }
+    if (normalized === '/' || normalized === '/login') {
+      return <LoginPage />
+    }
+    if (normalized === '/events') {
+      return <EventsPage />
+    }
+    if (normalized.startsWith('/events/')) {
+      const id = normalized.slice('/events/'.length)
+      return <EventDetailPage params={{ id }} />
+    }
+    return <LoginPage />
+  }
+
+  // When logged in
+  if (normalized === '/') {
+    return <HomePage />
+  }
+  if (normalized === '/events') {
+    return <EventsPage />
+  }
+  if (normalized.startsWith('/events/')) {
+    const id = normalized.slice('/events/'.length)
+    return <EventDetailPage params={{ id }} />
+  }
+  if (normalized === '/organizer') {
+    return <OrganizerPage />
+  }
+  if (normalized === '/registrations') {
+    return <RegistrationsPage />
+  }
+  if (normalized === '/login') {
+    return <LoginPage />
+  }
+  if (normalized === '/login/student') {
+    return <LoginPage initialRole="student" />
+  }
+  if (normalized === '/login/organizer' || normalized === '/login/organiser') {
+    return <LoginPage initialRole="organizer" />
+  }
+
+  return <HomePage />
+}
 
 export default function App() {
   const [pathname, setPathname] = useState<string>(() => {
@@ -33,43 +89,13 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  const renderPage = () => {
-    const normalized = pathname.replace(/\/$/, '') || '/'
-
-    if (normalized === '/') {
-      return <HomePage />
-    }
-    if (normalized === '/events') {
-      return <EventsPage />
-    }
-    if (normalized.startsWith('/events/')) {
-      const id = normalized.slice('/events/'.length)
-      return <EventDetailPage params={{ id }} />
-    }
-    if (normalized === '/organizer') {
-      return <OrganizerPage />
-    }
-    if (normalized === '/registrations') {
-      return <RegistrationsPage />
-    }
-    if (normalized === '/login') {
-      return <LoginPage />
-    }
-    if (normalized === '/login/student') {
-      return <StudentLoginPage />
-    }
-    if (normalized === '/login/organizer' || normalized === '/login/organiser') {
-      return <OrganizerLoginPage />
-    }
-
-    return <HomePage />
-  }
-
   return (
     <ThemeProvider>
       <AuthProvider>
         <Navbar />
-        <main style={{ minHeight: '70vh' }}>{renderPage()}</main>
+        <main style={{ minHeight: '70vh' }}>
+          <AppContent pathname={pathname} />
+        </main>
         <Footer />
       </AuthProvider>
     </ThemeProvider>

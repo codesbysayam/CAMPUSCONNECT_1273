@@ -5,7 +5,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from './AuthProvider'
 import ThemeToggle from './ThemeToggle'
-import { GraduationCap, Briefcase, LogIn, ChevronDown } from 'lucide-react'
+import {
+  GraduationCap,
+  Briefcase,
+  LogIn,
+  LogOut,
+  ChevronDown,
+  User,
+} from 'lucide-react'
 
 const LINKS = [
   { href: '/', label: 'Home' },
@@ -16,7 +23,7 @@ const LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const { currentUser, setCurrentUserId, allUsers } = useAuth()
+  const { currentUser, setCurrentUserId, logout, allUsers } = useAuth()
   const [loginMenuOpen, setLoginMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -81,224 +88,259 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav aria-label="Primary" style={{ display: 'flex', alignItems: 'center' }}>
-          <ul style={{ display: 'flex', gap: 4 }}>
-            {LINKS.filter(
-              (link) =>
-                link.href !== '/organizer' || currentUser.role === 'organizer',
-            ).map((link) => {
-              const active =
-                link.href === '/'
-                  ? pathname === '/'
-                  : pathname.startsWith(link.href)
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    style={{
-                      display: 'inline-block',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius)',
-                      fontSize: 14.5,
-                      fontWeight: 500,
-                      textDecoration: 'none',
-                      color: active ? 'var(--ink)' : 'var(--ink-soft)',
-                      background: active ? 'var(--slate-bg)' : 'transparent',
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+        {currentUser && (
+          <nav
+            aria-label="Primary"
+            style={{ display: 'flex', alignItems: 'center' }}
+          >
+            <ul style={{ display: 'flex', gap: 4 }}>
+              {LINKS.filter(
+                (link) =>
+                  link.href !== '/organizer' || currentUser.role === 'organizer',
+              ).map((link) => {
+                const active =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(link.href)
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      style={{
+                        display: 'inline-block',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius)',
+                        fontSize: 14.5,
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        color: active ? 'var(--ink)' : 'var(--ink-soft)',
+                        background: active ? 'var(--slate-bg)' : 'transparent',
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <ThemeToggle />
 
-          {/* Login Portals Menu */}
-          <div ref={menuRef} style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={() => setLoginMenuOpen((o) => !o)}
-              className="btn btn-secondary"
-              style={{
-                padding: '6px 12px',
-                fontSize: 13.5,
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-              aria-expanded={loginMenuOpen}
-              aria-label="Login options"
-            >
-              <LogIn size={15} />
-              <span>Login</span>
-              <ChevronDown size={14} style={{ opacity: 0.7 }} />
-            </button>
+          {!currentUser ? (
+            /* Unauthenticated: Direct Login Portals */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div ref={menuRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  onClick={() => setLoginMenuOpen((o) => !o)}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  aria-expanded={loginMenuOpen}
+                  aria-label="Login options"
+                >
+                  <LogIn size={15} />
+                  <span>Sign In</span>
+                  <ChevronDown size={14} style={{ opacity: 0.8 }} />
+                </button>
 
-            {loginMenuOpen && (
-              <div
+                {loginMenuOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: 250,
+                      background: 'var(--card)',
+                      border: '1.5px solid var(--border)',
+                      borderRadius: 'var(--radius)',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                      padding: 8,
+                      zIndex: 30,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: 'var(--muted-foreground)',
+                      }}
+                    >
+                      Select Portal
+                    </div>
+
+                    <Link
+                      href="/login/student"
+                      onClick={() => setLoginMenuOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        textDecoration: 'none',
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                        color: 'var(--foreground)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 6,
+                          background: 'rgba(22, 163, 74, 0.12)',
+                          color: '#16a34a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <GraduationCap size={16} />
+                      </span>
+                      <div>
+                        <div>Student Login</div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--muted-foreground)',
+                            fontWeight: 400,
+                          }}
+                        >
+                          Book seats & tickets
+                        </div>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/login/organizer"
+                      onClick={() => setLoginMenuOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        textDecoration: 'none',
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                        color: 'var(--foreground)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 6,
+                          background: 'rgba(221, 148, 37, 0.15)',
+                          color: 'var(--amber)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Briefcase size={16} />
+                      </span>
+                      <div>
+                        <div>Organiser Login</div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--muted-foreground)',
+                            fontWeight: 400,
+                          }}
+                        >
+                          Publish & manage events
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Authenticated Profile & Switcher */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label
                 style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  width: 240,
-                  background: 'var(--card)',
-                  border: '1.5px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-                  padding: 8,
-                  zIndex: 30,
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  color: 'var(--ink-soft)',
                 }}
               >
-                <div
+                <span
+                  className="eyebrow-tag"
                   style={{
-                    padding: '6px 10px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    color: 'var(--muted-foreground)',
+                    whiteSpace: 'nowrap',
+                    background:
+                      currentUser.role === 'organizer'
+                        ? 'rgba(221, 148, 37, 0.15)'
+                        : 'rgba(22, 163, 74, 0.12)',
+                    color:
+                      currentUser.role === 'organizer'
+                        ? 'var(--amber)'
+                        : '#16a34a',
+                    borderColor: 'transparent',
                   }}
                 >
-                  Choose Login Portal
-                </div>
-
-                <Link
-                  href="/login/student"
-                  onClick={() => setLoginMenuOpen(false)}
+                  {currentUser.role}
+                </span>
+                <select
+                  aria-label="Switch current user"
+                  value={currentUser.id}
+                  onChange={(e) => setCurrentUserId(e.target.value)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    textDecoration: 'none',
+                    border: '1.5px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: '6px 8px',
                     fontSize: 13.5,
-                    fontWeight: 600,
-                    color: 'var(--foreground)',
-                    background: pathname === '/login/student' ? 'var(--muted)' : 'transparent',
+                    background: 'var(--paper-raised)',
+                    color: 'var(--ink)',
+                    maxWidth: 140,
                   }}
-                  className="login-menu-item"
                 >
-                  <span
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(22, 163, 74, 0.12)',
-                      color: '#16a34a',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <GraduationCap size={16} />
-                  </span>
-                  <div>
-                    <div>Student Login</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>
-                      Book & manage seats
-                    </div>
-                  </div>
-                </Link>
+                  {allUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.role})
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-                <Link
-                  href="/login/organizer"
-                  onClick={() => setLoginMenuOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    textDecoration: 'none',
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    color: 'var(--foreground)',
-                    background: pathname === '/login/organizer' ? 'var(--muted)' : 'transparent',
-                  }}
-                  className="login-menu-item"
-                >
-                  <span
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'rgba(221, 148, 37, 0.15)',
-                      color: 'var(--amber)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Briefcase size={16} />
-                  </span>
-                  <div>
-                    <div>Organiser Login</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>
-                      Publish & manage events
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Current User Role / Switcher */}
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 13,
-              color: 'var(--ink-soft)',
-            }}
-          >
-            <span
-              className="eyebrow-tag"
-              style={{
-                whiteSpace: 'nowrap',
-                background:
-                  currentUser.role === 'organizer'
-                    ? 'rgba(221, 148, 37, 0.15)'
-                    : 'rgba(22, 163, 74, 0.12)',
-                color:
-                  currentUser.role === 'organizer'
-                    ? 'var(--amber)'
-                    : '#16a34a',
-                borderColor: 'transparent',
-              }}
-            >
-              {currentUser.role}
-            </span>
-            <select
-              aria-label="Switch current user"
-              value={currentUser.id}
-              onChange={(e) => setCurrentUserId(e.target.value)}
-              style={{
-                border: '1.5px solid var(--line)',
-                borderRadius: 'var(--radius)',
-                padding: '6px 8px',
-                fontSize: 13.5,
-                background: 'var(--paper-raised)',
-                color: 'var(--ink)',
-                maxWidth: 140,
-              }}
-            >
-              {allUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.role})
-                </option>
-              ))}
-            </select>
-          </label>
+              <button
+                type="button"
+                onClick={logout}
+                className="btn btn-secondary"
+                style={{
+                  padding: '6px 12px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  gap: 6,
+                }}
+                title="Sign out of Campus Connect"
+              >
+                <LogOut size={14} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

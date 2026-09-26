@@ -18,12 +18,21 @@ export default function RegistrationsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
-  if (currentUser.role !== 'student') {
+  if (!currentUser || currentUser.role !== 'student') {
     return (
       <section className="shell" style={{ padding: '56px 0' }}>
         <EmptyState
-          title="This page is for students"
-          description="Switch to a student account from the top-right menu to see registered events."
+          title="Student login required"
+          description="Sign in as a student to see your registered events, book seats, and view tickets."
+          action={
+            <Link
+              href="/login/student"
+              className="btn btn-primary"
+              style={{ marginTop: 12 }}
+            >
+              Sign In as Student →
+            </Link>
+          }
         />
       </section>
     )
