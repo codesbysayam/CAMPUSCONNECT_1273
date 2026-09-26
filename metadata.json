@@ -1,0 +1,6 @@
+{
+  "name": "Campus Connect",
+  "description": "Find and register for events happening on campus.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
