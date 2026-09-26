@@ -1,11 +1,39 @@
 'use client'
 
 import Link from 'next/link'
+import {
+  CalendarDays,
+  MapPin,
+  Users,
+  Code2,
+  Palette,
+  Trophy,
+  Wrench,
+  BriefcaseBusiness,
+  Music2,
+  GraduationCap,
+} from 'lucide-react'
 import { CampusEvent, isPastEvent, isFullEvent } from '@/data/events'
-import StatusBadge from './StatusBadge'
 import { getEventImage } from '@/lib/event-images'
 
-function formatDate(iso: string) {
+type EventCardProps = {
+  event: CampusEvent
+}
+
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
+  tech: Code2,
+  technology: Code2,
+  cultural: Palette,
+  sports: Trophy,
+  workshop: Wrench,
+  career: BriefcaseBusiness,
+  music: Music2,
+}
+
+function formatEventDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
@@ -13,7 +41,7 @@ function formatDate(iso: string) {
   })
 }
 
-export default function EventCard({ event }: { event: CampusEvent }) {
+export default function EventCard({ event }: EventCardProps) {
   const past = isPastEvent(event)
   const full = isFullEvent(event)
   const status = event.cancelled
@@ -24,39 +52,90 @@ export default function EventCard({ event }: { event: CampusEvent }) {
         ? 'full'
         : 'open'
 
-  const imageSrc = getEventImage(event.category)
+  const image = getEventImage(event.category)
+  const categoryKey = (event.category || '').trim().toLowerCase()
+  const CategoryIcon = CATEGORY_ICONS[categoryKey] || GraduationCap
+
+  const statusLabel =
+    status === 'cancelled'
+      ? 'Cancelled'
+      : status === 'past'
+        ? 'Past'
+        : status === 'full'
+          ? 'Full'
+          : 'Open'
 
   return (
-    <Link href={`/events/${event.id}`} className="event-card">
-      <div className="event-card-image">
+    <article className="event-card">
+      {/* 1. Event Image / Visual */}
+      <Link
+        href={`/events/${event.id}`}
+        className="event-card__media"
+        tabIndex={-1}
+        aria-hidden="true"
+      >
         <img
-          src={imageSrc}
-          alt={event.name}
-          className="event-card-image-content"
+          src={image}
+          alt=""
+          className="event-card__image"
           loading="lazy"
           onError={(e) => {
             e.currentTarget.src = '/events/default.svg'
           }}
         />
-      </div>
+      </Link>
 
+      {/* 2. Card Content Body */}
       <div className="event-card__body">
-        <div className="event-card__main">
-          <span className="event-card__category">{event.category}</span>
-          <h3 className="event-card__name">{event.name}</h3>
+        {/* Category + Status */}
+        <div className="event-card__top">
+          <span className="event-card__category">
+            <CategoryIcon size={14} />
+            <span>{event.category}</span>
+          </span>
+
+          <span className={`event-status event-status--${status}`}>
+            {statusLabel}
+          </span>
+        </div>
+
+        {/* 3. Event Name */}
+        <h3 className="event-card__title">
+          <Link href={`/events/${event.id}`} className="event-card__title-link">
+            {event.name}
+          </Link>
+        </h3>
+
+        {/* 4 & 5. Date and Venue Metadata */}
+        <div className="event-card__meta-group">
           <div className="event-card__meta">
-            <span>{formatDate(event.date)}</span>
-            <span>·</span>
+            <CalendarDays size={16} />
+            <span>{formatEventDate(event.date)}</span>
+          </div>
+
+          <div className="event-card__meta">
+            <MapPin size={16} />
             <span>{event.venue}</span>
           </div>
         </div>
-        <div className="event-card__stub">
-          <StatusBadge status={status} />
-          <span className="event-card__seats">
-            {event.seatsAvailable}/{event.capacity} seats
-          </span>
+
+        {/* 6 & 7. Available Seats and Action Button */}
+        <div className="event-card__footer">
+          <div className="event-card__seats">
+            <Users size={16} />
+            <span>
+              {event.seatsAvailable}/{event.capacity} seats
+            </span>
+          </div>
+
+          <Link
+            href={`/events/${event.id}`}
+            className="btn btn-secondary event-card__btn"
+          >
+            View event →
+          </Link>
         </div>
       </div>
-    </Link>
+    </article>
   )
 }

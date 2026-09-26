@@ -186,13 +186,7 @@ export default function EventsPage() {
           />
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 16,
-          }}
-        >
+        <div className="events-grid">
           {filteredEvents.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}

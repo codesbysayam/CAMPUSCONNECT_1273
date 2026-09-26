@@ -80,13 +80,7 @@ export default function HomePage() {
             See full listing →
           </Link>
         </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 16,
-          }}
-        >
+        <div className="events-grid">
           {upcoming.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}

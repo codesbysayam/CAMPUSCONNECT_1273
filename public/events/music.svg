@@ -1,31 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="100%" height="100%">
   <defs>
-    <linearGradient id="bg-music" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#431407"/>
-      <stop offset="50%" stop-color="#9a3412"/>
-      <stop offset="100%" stop-color="#270a03"/>
+    <linearGradient id="music-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#270a03"/>
+      <stop offset="50%" stop-color="#431407"/>
+      <stop offset="100%" stop-color="#9a3412"/>
     </linearGradient>
+    <radialGradient id="music-glow" cx="40%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#fb923c" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#270a03" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="640" height="360" fill="url(#bg-music)"/>
-  <!-- Soundwaves -->
-  <g stroke="#fed7aa" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round">
-    <line x1="160" y1="160" x2="160" y2="180"/>
-    <line x1="180" y1="140" x2="180" y2="200"/>
-    <line x1="200" y1="120" x2="200" y2="220"/>
-    <line x1="220" y1="150" x2="220" y2="190"/>
-    <line x1="420" y1="150" x2="420" y2="190"/>
-    <line x1="440" y1="120" x2="440" y2="220"/>
-    <line x1="460" y1="140" x2="460" y2="200"/>
-    <line x1="480" y1="160" x2="480" y2="180"/>
+  <rect width="640" height="360" fill="url(#music-bg)"/>
+  <rect width="640" height="360" fill="url(#music-glow)"/>
+  <!-- Smooth harmonic sound wave ripples -->
+  <g fill="none" stroke="#fed7aa" stroke-opacity="0.12" stroke-width="2">
+    <path d="M-40,180 Q120,60 280,180 T600,180 T920,180"/>
+    <path d="M-40,210 Q140,110 320,210 T680,210"/>
+    <path d="M-40,150 Q100,10 240,150 T520,150"/>
   </g>
-  <!-- Music Note Emblem -->
-  <g transform="translate(320, 155)">
-    <circle cx="0" cy="0" r="52" fill="#270a03" stroke="#fed7aa" stroke-width="2.5"/>
-    <!-- Eighth notes -->
-    <circle cx="-14" cy="14" r="8" fill="#fed7aa"/>
-    <circle cx="14" cy="8" r="8" fill="#fed7aa"/>
-    <path d="M-6,14 L-6,-16 L22,-22 L22,8" fill="none" stroke="#fed7aa" stroke-width="3.5" stroke-linecap="round"/>
-    <path d="M-6,-12 L22,-18" stroke="#fed7aa" stroke-width="4"/>
-  </g>
-  <text x="320" y="275" font-family="sans-serif" font-size="14" font-weight="700" fill="#ffedd5" letter-spacing="4" text-anchor="middle">MUSIC &amp; LIVE SESSIONS</text>
 </svg>

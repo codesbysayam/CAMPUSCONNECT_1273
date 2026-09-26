@@ -2,7 +2,7 @@
 
 import { useTheme } from './ThemeProvider'
 
-export default function ThemeToggle() {
+export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -13,7 +13,7 @@ export default function ThemeToggle() {
         theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
       }
       title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-      className="btn btn-secondary"
+      className="btn btn-secondary theme-toggle"
       style={{
         padding: '5px 10px',
         fontSize: 15,
@@ -29,3 +29,5 @@ export default function ThemeToggle() {
     </button>
   )
 }
+
+export default ThemeToggle

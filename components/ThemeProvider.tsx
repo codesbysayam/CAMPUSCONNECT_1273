@@ -7,9 +7,9 @@ import {
   useState,
 } from 'react'
 
-type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark'
 
-type ThemeContextType = {
+export type ThemeContextType = {
   theme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
@@ -21,26 +21,52 @@ const defaultThemeContext: ThemeContextType = {
   toggleTheme: () => {},
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+export const ThemeContext = createContext<ThemeContextType>(defaultThemeContext)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light')
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('campus-connect-theme')
+        if (saved === 'dark' || saved === 'light') {
+          return saved
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return 'light'
+  })
+
   const [mounted, setMounted] = useState(false)
 
+  // Initialize theme on mount and apply classes
   useEffect(() => {
-    const saved = localStorage.getItem('campus-connect-theme')
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved)
-      document.documentElement.classList.toggle('dark', saved === 'dark')
+    try {
+      const saved = localStorage.getItem('campus-connect-theme')
+      const activeTheme: Theme =
+        saved === 'dark' || saved === 'light' ? saved : 'light'
+
+      setThemeState(activeTheme)
+      document.documentElement.classList.toggle('dark', activeTheme === 'dark')
+      document.documentElement.setAttribute('data-theme', activeTheme)
+    } catch {
+      // ignore
     }
     setMounted(true)
   }, [])
 
+  // Sync with DOM and localStorage whenever theme changes
   useEffect(() => {
     if (!mounted) return
 
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('campus-connect-theme', theme)
+    try {
+      document.documentElement.classList.toggle('dark', theme === 'dark')
+      document.documentElement.setAttribute('data-theme', theme)
+      localStorage.setItem('campus-connect-theme', theme)
+    } catch {
+      // ignore
+    }
   }, [theme, mounted])
 
   const setTheme = (nextTheme: Theme) => {
@@ -66,8 +92,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext)
-  if (!context) {
-    return defaultThemeContext
-  }
-  return context
+  return context || defaultThemeContext
 }
+
+export default ThemeProvider
