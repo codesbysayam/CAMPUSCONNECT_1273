@@ -409,6 +409,32 @@ export function createEvent(
   return event
 }
 
+export type SortOption = 'default' | 'date' | 'popularity'
+
+export function sortEvents(
+  eventList: CampusEvent[],
+  option: SortOption,
+): CampusEvent[] {
+  if (option === 'default') {
+    return [...eventList]
+  }
+  if (option === 'date') {
+    return [...eventList].sort(
+      (a, b) =>
+        new Date(a.date).getTime() -
+        new Date(b.date).getTime(),
+    )
+  }
+  if (option === 'popularity') {
+    return [...eventList].sort(
+      (a, b) =>
+        getRegistrationCount(b.id) -
+        getRegistrationCount(a.id),
+    )
+  }
+  return [...eventList]
+}
+
 export function updateEvent(
   eventId: string,
   organizerId: string,
@@ -417,11 +443,11 @@ export function updateEvent(
   const event = getEventById(eventId)
 
   if (!event) {
-    throw new Error('EVENT_NOT_FOUND')
+    throw new Error('Event not found.')
   }
 
   if (event.organizerId !== organizerId) {
-    throw new Error('FORBIDDEN')
+    throw new Error('You are not allowed to edit this event.')
   }
 
   const errors = validateEventInput(input)
@@ -434,7 +460,7 @@ export function updateEvent(
 
   if (input.capacity < registeredCount) {
     throw new Error(
-      `Capacity cannot be below the ${registeredCount} existing registrations.`,
+      `Capacity cannot be lower than ${registeredCount} active registrations.`,
     )
   }
 
@@ -457,11 +483,11 @@ export function cancelEvent(
   const event = getEventById(eventId)
 
   if (!event) {
-    throw new Error('EVENT_NOT_FOUND')
+    throw new Error('Event not found.')
   }
 
   if (event.organizerId !== organizerId) {
-    throw new Error('FORBIDDEN')
+    throw new Error('You are not allowed to cancel this event.')
   }
 
   event.cancelled = true

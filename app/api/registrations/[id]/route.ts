@@ -3,41 +3,40 @@ import { cancelRegistration } from '@/data/registrations'
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> | { id: string } },
 ) {
   try {
+    const resolvedParams = await Promise.resolve(context.params)
+    const id = resolvedParams.id
+
     const body = await request.json()
     const studentId = String(body.studentId ?? '')
 
     if (!studentId) {
       return NextResponse.json(
-        { error: 'Student login required.' },
+        { success: false, error: 'Student login required.' },
         { status: 401 },
       )
     }
 
-    const registration = cancelRegistration(params.id, studentId)
-    return NextResponse.json({ registration })
+    const registration = cancelRegistration(id, studentId)
+    return NextResponse.json({
+      success: true,
+      registration,
+    })
   } catch (error) {
-    const code = error instanceof Error ? error.message : ''
+    const message =
+      error instanceof Error ? error.message : 'Unable to cancel registration.'
 
-    if (code === 'FORBIDDEN') {
-      return NextResponse.json(
-        { error: 'You cannot cancel another student’s registration.' },
-        { status: 403 },
-      )
-    }
-
-    if (code === 'REGISTRATION_NOT_FOUND') {
-      return NextResponse.json(
-        { error: 'Registration not found.' },
-        { status: 404 },
-      )
-    }
+    const status = message.includes('cannot cancel')
+      ? 403
+      : message.includes('not found')
+        ? 404
+        : 400
 
     return NextResponse.json(
-      { error: code || 'Unable to cancel registration.' },
-      { status: 400 },
+      { success: false, error: message },
+      { status },
     )
   }
 }

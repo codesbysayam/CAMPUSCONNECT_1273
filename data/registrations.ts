@@ -1,4 +1,4 @@
-import { getEventById, isPastEvent, isFullEvent } from './events'
+import { getEventById, isPastEvent, isFullEvent, events, TODAY } from './events'
 
 export type RegistrationStatus = 'confirmed' | 'cancelled'
 
@@ -78,32 +78,29 @@ export function createRegistration(
   eventId: string,
 ): Registration {
   if (!studentId || !studentId.trim()) {
-    throw new Error('UNAUTHORIZED')
+    throw new Error('You must be logged in')
   }
 
   const event = getEventById(eventId)
   if (!event) {
-    throw new Error('EVENT_NOT_FOUND')
+    throw new Error('Event not found')
   }
 
   if (event.cancelled) {
-    throw new Error('EVENT_CANCELLED')
+    throw new Error('EVENT_CANCELLED: This event has been cancelled')
   }
 
-  if (isPastEvent(event)) {
-    throw new Error('EVENT_PAST')
+  if (isPastEvent(event) || new Date(event.date).getTime() < TODAY.getTime()) {
+    throw new Error('EVENT_PAST: Registration is closed for this event')
   }
 
   if (hasActiveRegistration(studentId, eventId)) {
-    throw new Error('ALREADY_REGISTERED')
+    throw new Error('ALREADY_REGISTERED: You are already registered for this event')
   }
 
   if (isFullEvent(event) || event.seatsAvailable <= 0) {
-    throw new Error('EVENT_FULL')
+    throw new Error('EVENT_FULL: This event is full')
   }
-
-  // Decrement seat count
-  event.seatsAvailable -= 1
 
   const newReg: Registration = {
     id: `reg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -114,6 +111,13 @@ export function createRegistration(
   }
 
   registrations.push(newReg)
+
+  // Update seats accurately from active registrations
+  const activeCount = registrations.filter(
+    (r) => r.eventId === event.id && r.status === 'confirmed',
+  ).length
+  event.seatsAvailable = Math.max(0, event.capacity - activeCount)
+
   return newReg
 }
 
@@ -126,25 +130,25 @@ export function cancelRegistration(
 ): Registration {
   const registration = registrations.find((r) => r.id === registrationId)
   if (!registration) {
-    throw new Error('REGISTRATION_NOT_FOUND')
+    throw new Error('Registration not found')
   }
 
   if (registration.studentId !== studentId) {
-    throw new Error('FORBIDDEN')
+    throw new Error('FORBIDDEN: You cannot cancel this registration')
   }
 
   if (registration.status === 'cancelled') {
-    return registration
+    throw new Error('ALREADY_CANCELLED: Registration is already cancelled')
   }
 
   registration.status = 'cancelled'
 
   const event = getEventById(registration.eventId)
   if (event) {
-    event.seatsAvailable = Math.min(
-      event.capacity,
-      event.seatsAvailable + 1,
-    )
+    const activeCount = registrations.filter(
+      (r) => r.eventId === event.id && r.status === 'confirmed',
+    ).length
+    event.seatsAvailable = Math.max(0, event.capacity - activeCount)
   }
 
   return registration

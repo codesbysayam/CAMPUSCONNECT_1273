@@ -140,7 +140,7 @@ describe('organizer event management', () => {
         category: 'Tech',
         capacity: 100,
       }),
-    ).toThrow('FORBIDDEN')
+    ).toThrow('You are not allowed to edit this event.')
   })
 
   it('soft cancels an event', () => {

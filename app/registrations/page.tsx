@@ -10,10 +10,12 @@ import {
 import { getEventById, isPastEvent } from '@/data/events'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
+import { apiRequest } from '@/lib/api'
 
 export default function RegistrationsPage() {
   const { currentUser } = useAuth()
   const [message, setMessage] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
   if (currentUser.role !== 'student') {
@@ -40,22 +42,24 @@ export default function RegistrationsPage() {
   })
 
   const handleCancel = async (id: string) => {
+    if (cancellingId) return
     setMessage(null)
+    setCancellingId(id)
+
     try {
-      const res = await fetch(`/api/registrations/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: currentUser.id }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setMessage(data.error || 'Failed to cancel registration.')
-        return
-      }
+      await apiRequest<{ success: boolean; registration: unknown }>(
+        `/api/registrations/${id}`,
+        {
+          method: 'DELETE',
+          body: JSON.stringify({ studentId: currentUser.id }),
+        },
+      )
       setMessage('Registration cancelled successfully.')
       setTick((t) => t + 1)
     } catch (err: any) {
       setMessage(err.message || 'An error occurred during cancellation.')
+    } finally {
+      setCancellingId(null)
     }
   }
 
@@ -88,6 +92,7 @@ export default function RegistrationsPage() {
         title="Upcoming"
         registrations={upcoming}
         onCancel={handleCancel}
+        cancellingId={cancellingId}
       />
 
       <div style={{ marginTop: 36 }}>
@@ -104,10 +109,12 @@ function RegistrationSection({
   title,
   registrations,
   onCancel,
+  cancellingId,
 }: {
   title: string
   registrations: Registration[]
   onCancel?: (id: string) => void
+  cancellingId?: string | null
 }) {
   if (registrations.length === 0) {
     return (
@@ -204,9 +211,10 @@ function RegistrationSection({
                 {onCancel && (
                   <button
                     className="btn btn-secondary"
+                    disabled={cancellingId === registration.id}
                     onClick={() => onCancel(registration.id)}
                   >
-                    Cancel
+                    {cancellingId === registration.id ? 'Cancelling…' : 'Cancel'}
                   </button>
                 )}
               </div>

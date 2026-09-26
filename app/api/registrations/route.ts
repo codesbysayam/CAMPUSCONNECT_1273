@@ -10,13 +10,13 @@ export async function GET(request: Request) {
 
   if (!studentId) {
     return NextResponse.json(
-      { error: 'studentId is required.' },
+      { success: false, error: 'studentId is required.' },
       { status: 400 },
     )
   }
 
-  const registrations = getRegistrationsForStudent(studentId)
-  return NextResponse.json({ registrations })
+  const studentRegs = getRegistrationsForStudent(studentId)
+  return NextResponse.json({ success: true, registrations: studentRegs })
 }
 
 export async function POST(request: Request) {
@@ -27,61 +27,37 @@ export async function POST(request: Request) {
 
     if (!studentId) {
       return NextResponse.json(
-        { error: 'Student login required.' },
+        { success: false, error: 'Student login required.' },
         { status: 401 },
       )
     }
 
     if (!eventId) {
       return NextResponse.json(
-        { error: 'eventId is required.' },
+        { success: false, error: 'eventId is required.' },
         { status: 400 },
       )
     }
 
     const registration = createRegistration(studentId, eventId)
-    return NextResponse.json({ registration }, { status: 201 })
+    return NextResponse.json({ success: true, registration }, { status: 201 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : ''
+    const message =
+      error instanceof Error ? error.message : 'Unable to register for event.'
 
-    if (code === 'ALREADY_REGISTERED') {
-      return NextResponse.json(
-        { error: 'You are already registered for this event.' },
-        { status: 409 },
-      )
-    }
-
-    if (code === 'EVENT_FULL') {
-      return NextResponse.json(
-        { error: 'This event has reached full capacity.' },
-        { status: 409 },
-      )
-    }
-
-    if (code === 'EVENT_PAST') {
-      return NextResponse.json(
-        { error: 'Cannot register for a past event.' },
-        { status: 400 },
-      )
-    }
-
-    if (code === 'EVENT_CANCELLED') {
-      return NextResponse.json(
-        { error: 'This event has been cancelled.' },
-        { status: 400 },
-      )
-    }
-
-    if (code === 'EVENT_NOT_FOUND') {
-      return NextResponse.json(
-        { error: 'Event not found.' },
-        { status: 404 },
-      )
-    }
+    const status = message.includes('already registered')
+      ? 409
+      : message.includes('full')
+        ? 409
+        : message.includes('logged in')
+          ? 401
+          : message.includes('not found')
+            ? 404
+            : 400
 
     return NextResponse.json(
-      { error: code || 'Unable to register for event.' },
-      { status: 400 },
+      { success: false, error: message },
+      { status },
     )
   }
 }

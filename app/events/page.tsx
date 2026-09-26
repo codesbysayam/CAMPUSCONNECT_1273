@@ -6,11 +6,12 @@ import {
   EventCategory,
   getFilteredEvents,
   isPastEvent,
-  sortEventsByDate,
-  sortEventsByPopularity,
+  sortEvents,
+  SortOption,
 } from '@/data/events'
 import EventCard from '@/components/EventCard'
 import EmptyState from '@/components/EmptyState'
+import CalendarView from '@/components/CalendarView'
 
 const CATEGORIES: (EventCategory | 'All')[] = [
   'All',
@@ -22,12 +23,13 @@ const CATEGORIES: (EventCategory | 'All')[] = [
   'Music',
 ]
 
-type SortOption = 'default' | 'date' | 'popularity'
+type ViewMode = 'list' | 'calendar'
 
 export default function EventsPage() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<EventCategory | 'All'>('All')
   const [sortOption, setSortOption] = useState<SortOption>('default')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   const filteredEvents = useMemo(() => {
     // Hide past and cancelled events from student listing
@@ -35,26 +37,78 @@ export default function EventsPage() {
       (event) => !event.cancelled && !isPastEvent(event),
     )
 
+    // Filter by query and category first
     const filtered = getFilteredEvents(upcoming, query, category)
 
-    if (sortOption === 'date') {
-      return sortEventsByDate(filtered)
-    }
-    if (sortOption === 'popularity') {
-      return sortEventsByPopularity(filtered)
-    }
-
-    return filtered
+    // Sort deterministically (default order preserves original seed array order)
+    return sortEvents(filtered, sortOption)
   }, [query, category, sortOption])
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
-      <div style={{ marginBottom: 28 }}>
-        <span className="eyebrow-tag">the board</span>
-        <h1 style={{ fontSize: 30, marginTop: 10 }}>All events</h1>
-        <p style={{ marginTop: 8 }}>
-          Everything posted by clubs and departments this semester.
-        </p>
+      <div
+        style={{
+          marginBottom: 28,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}
+      >
+        <div>
+          <span className="eyebrow-tag">the board</span>
+          <h1 style={{ fontSize: 30, marginTop: 10 }}>All events</h1>
+          <p style={{ marginTop: 8 }}>
+            Everything posted by clubs and departments this semester.
+          </p>
+        </div>
+
+        {/* View Mode Toggle: List vs Calendar */}
+        <div
+          style={{
+            display: 'inline-flex',
+            border: '1.5px solid var(--line)',
+            borderRadius: 'var(--radius)',
+            overflow: 'hidden',
+            background: 'var(--paper-raised)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            style={{
+              padding: '8px 16px',
+              fontSize: 13.5,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              background: viewMode === 'list' ? 'var(--ink)' : 'transparent',
+              color: viewMode === 'list' ? 'var(--paper)' : 'var(--ink-soft)',
+              transition: 'background 0.12s ease',
+            }}
+          >
+            List View
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('calendar')}
+            style={{
+              padding: '8px 16px',
+              fontSize: 13.5,
+              fontWeight: 600,
+              border: 'none',
+              borderLeft: '1.5px solid var(--line)',
+              cursor: 'pointer',
+              background:
+                viewMode === 'calendar' ? 'var(--ink)' : 'transparent',
+              color: viewMode === 'calendar' ? 'var(--paper)' : 'var(--ink-soft)',
+              transition: 'background 0.12s ease',
+            }}
+          >
+            Calendar View
+          </button>
+        </div>
       </div>
 
       <div
@@ -96,27 +150,31 @@ export default function EventsPage() {
           ))}
         </select>
 
-        <select
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value as SortOption)}
-          aria-label="Sort events"
-          style={{
-            padding: '10px 14px',
-            border: '1.5px solid var(--line)',
-            borderRadius: 'var(--radius)',
-            fontSize: 14.5,
-            background: 'var(--paper-raised)',
-            margin: 0,
-            width: 'auto',
-          }}
-        >
-          <option value="default">Default order</option>
-          <option value="date">Sort by Date</option>
-          <option value="popularity">Sort by Popularity</option>
-        </select>
+        {viewMode === 'list' && (
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as SortOption)}
+            aria-label="Sort events"
+            style={{
+              padding: '10px 14px',
+              border: '1.5px solid var(--line)',
+              borderRadius: 'var(--radius)',
+              fontSize: 14.5,
+              background: 'var(--paper-raised)',
+              margin: 0,
+              width: 'auto',
+            }}
+          >
+            <option value="default">Default order</option>
+            <option value="date">Sort by Date</option>
+            <option value="popularity">Sort by Popularity</option>
+          </select>
+        )}
       </div>
 
-      {filteredEvents.length === 0 ? (
+      {viewMode === 'calendar' ? (
+        <CalendarView events={filteredEvents} />
+      ) : filteredEvents.length === 0 ? (
         <div style={{ marginTop: 24 }}>
           <EmptyState
             title="No events found"

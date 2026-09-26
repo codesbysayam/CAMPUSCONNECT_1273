@@ -7,6 +7,7 @@ import { events, CampusEvent } from '@/data/events'
 import EmptyState from '@/components/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
 import EventForm from '@/components/EventForm'
+import { apiRequest } from '@/lib/api'
 
 export default function OrganizerPage() {
   const { currentUser } = useAuth()
@@ -33,16 +34,13 @@ export default function OrganizerPage() {
     if (!confirmed) return
 
     try {
-      const res = await fetch(`/api/events/${event.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizerId: currentUser.id }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || 'Unable to cancel event.')
-        return
-      }
+      await apiRequest<{ success: boolean; event: unknown }>(
+        `/api/events/${event.id}`,
+        {
+          method: 'DELETE',
+          body: JSON.stringify({ organizerId: currentUser.id }),
+        },
+      )
       setTick((t) => t + 1)
     } catch (err: any) {
       alert(err.message || 'Unable to cancel event.')

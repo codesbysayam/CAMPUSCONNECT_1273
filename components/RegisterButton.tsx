@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from './AuthProvider'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
 import { hasActiveRegistration } from '@/data/registrations'
+import { apiRequest } from '@/lib/api'
 
 interface RegisterButtonProps {
   eventId: string
@@ -48,20 +49,16 @@ export default function RegisterButton({
     setSubmitting(true)
 
     try {
-      const res = await fetch('/api/registrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId: currentUser.id,
-          eventId,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Failed to register.')
-        return
-      }
+      await apiRequest<{ success: boolean; registration: unknown }>(
+        '/api/registrations',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            studentId: currentUser.id,
+            eventId,
+          }),
+        },
+      )
 
       setSuccess(true)
       if (onRegistered) {

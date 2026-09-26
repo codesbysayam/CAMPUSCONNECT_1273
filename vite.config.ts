@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
-import { events, createEvent, updateEvent, cancelEvent } from './data/events';
+import { events, createEvent, updateEvent, cancelEvent, getEventById } from './data/events';
 import { getRegistrationsForStudent, createRegistration, cancelRegistration } from './data/registrations';
 import { getUserById } from './data/auth';
 
@@ -40,7 +40,7 @@ function apiRoutesPlugin() {
           if (pathname === '/api/events') {
             if (method === 'GET') {
               res.statusCode = 200;
-              res.end(JSON.stringify({ events }));
+              res.end(JSON.stringify({ success: true, events }));
               return;
             }
             if (method === 'POST') {
@@ -48,7 +48,7 @@ function apiRoutesPlugin() {
               const user = getUserById(organizerId);
               if (!user || user.role !== 'organizer') {
                 res.statusCode = 403;
-                res.end(JSON.stringify({ error: 'Organizer access required.' }));
+                res.end(JSON.stringify({ success: false, error: 'Organizer access required.' }));
                 return;
               }
               const event = createEvent(
@@ -63,7 +63,7 @@ function apiRoutesPlugin() {
                 organizerId,
               );
               res.statusCode = 201;
-              res.end(JSON.stringify({ event }));
+              res.end(JSON.stringify({ success: true, event }));
               return;
             }
           }
@@ -74,7 +74,7 @@ function apiRoutesPlugin() {
             const user = getUserById(organizerId);
             if (!user || user.role !== 'organizer') {
               res.statusCode = 403;
-              res.end(JSON.stringify({ error: 'Organizer access required.' }));
+              res.end(JSON.stringify({ success: false, error: 'Organizer access required.' }));
               return;
             }
 
@@ -88,14 +88,14 @@ function apiRoutesPlugin() {
                 capacity: Number(body.capacity),
               });
               res.statusCode = 200;
-              res.end(JSON.stringify({ event }));
+              res.end(JSON.stringify({ success: true, event }));
               return;
             }
 
             if (method === 'DELETE') {
               const event = cancelEvent(id, organizerId);
               res.statusCode = 200;
-              res.end(JSON.stringify({ event }));
+              res.end(JSON.stringify({ success: true, event }));
               return;
             }
           }
@@ -105,12 +105,12 @@ function apiRoutesPlugin() {
               const studentId = urlObj.searchParams.get('studentId');
               if (!studentId) {
                 res.statusCode = 400;
-                res.end(JSON.stringify({ error: 'studentId is required.' }));
+                res.end(JSON.stringify({ success: false, error: 'studentId is required.' }));
                 return;
               }
               const studentRegs = getRegistrationsForStudent(studentId);
               res.statusCode = 200;
-              res.end(JSON.stringify({ registrations: studentRegs }));
+              res.end(JSON.stringify({ success: true, registrations: studentRegs }));
               return;
             }
 
@@ -119,17 +119,17 @@ function apiRoutesPlugin() {
               const eventId = String(body.eventId ?? '');
               if (!studentId) {
                 res.statusCode = 401;
-                res.end(JSON.stringify({ error: 'Student login required.' }));
+                res.end(JSON.stringify({ success: false, error: 'Student login required.' }));
                 return;
               }
               if (!eventId) {
                 res.statusCode = 400;
-                res.end(JSON.stringify({ error: 'eventId is required.' }));
+                res.end(JSON.stringify({ success: false, error: 'eventId is required.' }));
                 return;
               }
               const registration = createRegistration(studentId, eventId);
               res.statusCode = 201;
-              res.end(JSON.stringify({ registration }));
+              res.end(JSON.stringify({ success: true, registration }));
               return;
             }
           }
@@ -140,12 +140,12 @@ function apiRoutesPlugin() {
               const studentId = String(body.studentId ?? '');
               if (!studentId) {
                 res.statusCode = 401;
-                res.end(JSON.stringify({ error: 'Student login required.' }));
+                res.end(JSON.stringify({ success: false, error: 'Student login required.' }));
                 return;
               }
               const registration = cancelRegistration(id, studentId);
               res.statusCode = 200;
-              res.end(JSON.stringify({ registration }));
+              res.end(JSON.stringify({ success: true, registration }));
               return;
             }
           }
@@ -153,29 +153,15 @@ function apiRoutesPlugin() {
           next();
         } catch (err: any) {
           const code = err.message || '';
-          if (code === 'ALREADY_REGISTERED') {
-            res.statusCode = 409;
-            res.end(JSON.stringify({ error: 'You are already registered for this event.' }));
-            return;
-          }
-          if (code === 'EVENT_FULL') {
-            res.statusCode = 409;
-            res.end(JSON.stringify({ error: 'This event has reached full capacity.' }));
-            return;
-          }
-          if (code === 'FORBIDDEN') {
-            res.statusCode = 403;
-            res.end(JSON.stringify({ error: 'Forbidden' }));
-            return;
-          }
-          if (code === 'EVENT_NOT_FOUND' || code === 'REGISTRATION_NOT_FOUND') {
-            res.statusCode = 404;
-            res.end(JSON.stringify({ error: code }));
-            return;
-          }
+          let status = 400;
+          if (code.includes('already registered')) status = 409;
+          else if (code.includes('full')) status = 409;
+          else if (code.includes('not allowed') || code.includes('cannot cancel')) status = 403;
+          else if (code.includes('not found')) status = 404;
+          else if (code.includes('logged in')) status = 401;
 
-          res.statusCode = 400;
-          res.end(JSON.stringify({ error: code || 'An error occurred' }));
+          res.statusCode = status;
+          res.end(JSON.stringify({ success: false, error: code }));
         }
       });
     },

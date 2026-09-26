@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { EventCategory } from '@/data/events'
+import { apiRequest } from '@/lib/api'
 
 const CATEGORIES: EventCategory[] = [
   'Tech',
@@ -70,7 +71,18 @@ export default function EventForm({
       return
     }
 
-    if (!date || new Date(date) <= new Date()) {
+    if (!date) {
+      setError('A valid event date is required.')
+      return
+    }
+
+    const eventDate = new Date(date)
+    if (Number.isNaN(eventDate.getTime())) {
+      setError('A valid event date is required.')
+      return
+    }
+
+    if (eventDate.getTime() <= Date.now()) {
       setError('Event date must be in the future.')
       return
     }
@@ -84,32 +96,23 @@ export default function EventForm({
     setSaving(true)
 
     try {
-      const response = await fetch(
+      await apiRequest<{ success: boolean; event: unknown }>(
         eventId ? `/api/events/${eventId}` : '/api/events',
         {
           method: eventId ? 'PATCH' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
             organizerId,
-            name,
-            description,
-            date: new Date(date).toISOString().slice(0, 19),
-            venue,
+            name: name.trim(),
+            description: description.trim(),
+            date: eventDate.toISOString(),
+            venue: venue.trim(),
             category,
             capacity: numericCapacity,
           }),
         },
       )
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error ?? 'Unable to save event.')
-        return
-      }
-
+      setError('')
       onSaved()
     } catch (err: any) {
       setError(err.message || 'Unable to save event.')
