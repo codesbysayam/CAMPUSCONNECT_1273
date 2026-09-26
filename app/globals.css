@@ -254,7 +254,8 @@ img {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
-.event-card__media {
+.event-card__media,
+.event-card-image {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -264,7 +265,8 @@ img {
   text-decoration: none;
 }
 
-.event-card__image {
+.event-card__image,
+.event-card-image-content {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -272,7 +274,8 @@ img {
   transition: transform 220ms ease;
 }
 
-.event-card:hover .event-card__image {
+.event-card:hover .event-card__image,
+.event-card:hover .event-card-image-content {
   transform: scale(1.03);
 }
 

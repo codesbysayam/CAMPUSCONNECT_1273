@@ -2,7 +2,7 @@
 
 import { useTheme } from './ThemeProvider'
 
-export function ThemeToggle() {
+export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -29,5 +29,3 @@ export function ThemeToggle() {
     </button>
   )
 }
-
-export default ThemeToggle

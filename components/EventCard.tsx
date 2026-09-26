@@ -70,14 +70,14 @@ export default function EventCard({ event }: EventCardProps) {
       {/* 1. Event Image / Visual */}
       <Link
         href={`/events/${event.id}`}
-        className="event-card__media"
+        className="event-card__media event-card-image"
         tabIndex={-1}
         aria-hidden="true"
       >
         <img
           src={image}
           alt=""
-          className="event-card__image"
+          className="event-card__image event-card-image-content"
           loading="lazy"
           onError={(e) => {
             e.currentTarget.src = '/events/default.svg'
