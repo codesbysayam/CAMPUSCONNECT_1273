@@ -1,8 +1,16 @@
 'use client'
 
-import { useState } from 'react'
-import { events, EventCategory } from '@/data/events'
+import { useMemo, useState } from 'react'
+import {
+  events,
+  EventCategory,
+  getFilteredEvents,
+  isPastEvent,
+  sortEventsByDate,
+  sortEventsByPopularity,
+} from '@/data/events'
 import EventCard from '@/components/EventCard'
+import EmptyState from '@/components/EmptyState'
 
 const CATEGORIES: (EventCategory | 'All')[] = [
   'All',
@@ -14,15 +22,30 @@ const CATEGORIES: (EventCategory | 'All')[] = [
   'Music',
 ]
 
+type SortOption = 'default' | 'date' | 'popularity'
+
 export default function EventsPage() {
-  // PARTICIPANT TASK (Task 1): these two pieces of state exist so the
-  // search box and category dropdown below are usable, but right now
-  // nothing actually reads them — the grid below always renders every
-  // event in `events`. Wire this up to `searchEventsByName` and
-  // `filterEventsByCategory` from data/events.ts, and make the two
-  // compose together.
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<EventCategory | 'All'>('All')
+  const [sortOption, setSortOption] = useState<SortOption>('default')
+
+  const filteredEvents = useMemo(() => {
+    // Hide past and cancelled events from student listing
+    const upcoming = events.filter(
+      (event) => !event.cancelled && !isPastEvent(event),
+    )
+
+    const filtered = getFilteredEvents(upcoming, query, category)
+
+    if (sortOption === 'date') {
+      return sortEventsByDate(filtered)
+    }
+    if (sortOption === 'popularity') {
+      return sortEventsByPopularity(filtered)
+    }
+
+    return filtered
+  }, [query, category, sortOption])
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
@@ -49,6 +72,8 @@ export default function EventsPage() {
             borderRadius: 'var(--radius)',
             fontSize: 14.5,
             background: 'var(--paper-raised)',
+            margin: 0,
+            width: 'auto',
           }}
         />
         <select
@@ -60,6 +85,8 @@ export default function EventsPage() {
             borderRadius: 'var(--radius)',
             fontSize: 14.5,
             background: 'var(--paper-raised)',
+            margin: 0,
+            width: 'auto',
           }}
         >
           {CATEGORIES.map((c) => (
@@ -68,19 +95,51 @@ export default function EventsPage() {
             </option>
           ))}
         </select>
+
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as SortOption)}
+          aria-label="Sort events"
+          style={{
+            padding: '10px 14px',
+            border: '1.5px solid var(--line)',
+            borderRadius: 'var(--radius)',
+            fontSize: 14.5,
+            background: 'var(--paper-raised)',
+            margin: 0,
+            width: 'auto',
+          }}
+        >
+          <option value="default">Default order</option>
+          <option value="date">Sort by Date</option>
+          <option value="popularity">Sort by Popularity</option>
+        </select>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: 16,
-        }}
-      >
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
+      {filteredEvents.length === 0 ? (
+        <div style={{ marginTop: 24 }}>
+          <EmptyState
+            title="No events found"
+            description={
+              query || category !== 'All'
+                ? 'Try changing your search or category filter.'
+                : 'There are no upcoming events right now.'
+            }
+          />
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: 16,
+          }}
+        >
+          {filteredEvents.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

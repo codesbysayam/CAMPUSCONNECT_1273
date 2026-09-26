@@ -1,7 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
+import RegisterButton from '@/components/RegisterButton'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -24,6 +28,7 @@ export default function EventDetailPage({
 }: {
   params: { id: string }
 }) {
+  const [tick, setTick] = useState(0)
   const event = getEventById(params.id)
 
   if (!event) {
@@ -51,7 +56,6 @@ export default function EventDetailPage({
       : full
         ? 'full'
         : 'open'
-  const canRegister = !past && !full && !event.cancelled
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
@@ -96,23 +100,10 @@ export default function EventDetailPage({
             value={`${event.seatsAvailable} of ${event.capacity} available`}
           />
 
-          {/* PARTICIPANT TASK (Task 2 — Registration): this button is a
-              placeholder. Wire it to a registration form and the
-              POST /api/registrations route, and make sure it respects
-              login state, duplicate registrations, full events, and
-              past/cancelled events. */}
-          <button
-            className="btn btn-primary"
-            disabled={!canRegister}
-            style={{ marginTop: 4 }}
-            title="Registration isn't wired up yet — that's Task 2"
-          >
-            {canRegister
-              ? 'Register'
-              : status === 'full'
-                ? 'Event full'
-                : 'Registration closed'}
-          </button>
+          <RegisterButton
+            eventId={event.id}
+            onRegistered={() => setTick((t) => t + 1)}
+          />
         </aside>
       </div>
     </section>

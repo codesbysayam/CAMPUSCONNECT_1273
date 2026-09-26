@@ -1,3 +1,5 @@
+import { registrations } from './registrations'
+
 export type EventCategory =
   | 'Tech'
   | 'Cultural'
@@ -22,7 +24,7 @@ export interface CampusEvent {
 // "Today" for the seed data. Events before this are considered past.
 export const TODAY = new Date('2026-09-16T09:00:00')
 
-export const events: CampusEvent[] = [
+export const INITIAL_EVENTS: CampusEvent[] = [
   {
     id: 'evt-01',
     name: 'Hack the Campus 2026',
@@ -220,6 +222,13 @@ export const events: CampusEvent[] = [
   },
 ]
 
+export const events: CampusEvent[] = INITIAL_EVENTS.map((e) => ({ ...e }))
+
+export function resetEvents(): void {
+  events.length = 0
+  INITIAL_EVENTS.forEach((e) => events.push({ ...e }))
+}
+
 /** True when the event's date has already passed relative to TODAY. */
 export function isPastEvent(event: CampusEvent): boolean {
   return new Date(event.date).getTime() < TODAY.getTime()
@@ -236,33 +245,226 @@ export function getEventById(id: string): CampusEvent | undefined {
 }
 
 /**
- * PARTICIPANT TASK (Task 1 — Event Listing):
- *
- * This is a stub. Right now it ignores `query` completely and just
- * returns every event, which is why `tests/search.test.ts` is failing.
- *
- * You need to make this do a case-insensitive, partial match on
- * `event.name` — e.g. "hack" should match "Hack the Campus 2026".
+ * Searches events by name using a case-insensitive, partial match.
  */
 export function searchEventsByName(
   eventList: CampusEvent[],
   query: string,
 ): CampusEvent[] {
-  // TODO(participant): implement case-insensitive partial name search.
-  return eventList
+  const normalizedQuery = query.trim().toLowerCase()
+
+  if (!normalizedQuery) {
+    return eventList
+  }
+
+  return eventList.filter((event) =>
+    event.name.toLowerCase().includes(normalizedQuery),
+  )
 }
 
 /**
- * PARTICIPANT TASK (Task 1 — Event Listing):
- *
- * This is a stub. Right now it ignores `category` and returns every
- * event unchanged. You need to filter by exact category match, and
- * make sure it composes with searchEventsByName above.
+ * Filters events by exact category match, or returns all events when category is 'All'.
  */
 export function filterEventsByCategory(
   eventList: CampusEvent[],
   category: EventCategory | 'All',
 ): CampusEvent[] {
-  // TODO(participant): implement category filtering.
-  return eventList
+  if (category === 'All') {
+    return eventList
+  }
+
+  return eventList.filter((event) => event.category === category)
+}
+
+/**
+ * Returns upcoming events that are not cancelled and not in the past relative to TODAY.
+ */
+export function getUpcomingEvents(
+  eventList: CampusEvent[] = events,
+): CampusEvent[] {
+  return eventList.filter(
+    (event) => !event.cancelled && !isPastEvent(event),
+  )
+}
+
+/**
+ * Composes search and category filter.
+ */
+export function getFilteredEvents(
+  eventList: CampusEvent[],
+  query: string,
+  category: EventCategory | 'All',
+): CampusEvent[] {
+  const searched = searchEventsByName(eventList, query)
+  return filterEventsByCategory(searched, category)
+}
+
+/**
+ * Optional stretch: sort events chronologically by date.
+ */
+export function sortEventsByDate(
+  eventList: CampusEvent[],
+): CampusEvent[] {
+  return [...eventList].sort(
+    (a, b) =>
+      new Date(a.date).getTime() -
+      new Date(b.date).getTime(),
+  )
+}
+
+/**
+ * Optional stretch: count active (confirmed) registrations for an event.
+ */
+export function getRegistrationCount(eventId: string): number {
+  return registrations.filter(
+    (registration) =>
+      registration.eventId === eventId &&
+      registration.status === 'confirmed',
+  ).length
+}
+
+/**
+ * Optional stretch: sort events descending by registration popularity.
+ */
+export function sortEventsByPopularity(
+  eventList: CampusEvent[],
+): CampusEvent[] {
+  return [...eventList].sort(
+    (a, b) =>
+      getRegistrationCount(b.id) -
+      getRegistrationCount(a.id),
+  )
+}
+
+export interface CreateEventInput {
+  name: string
+  description: string
+  date: string
+  venue: string
+  category: EventCategory
+  capacity: number
+}
+
+export function validateEventInput(
+  input: CreateEventInput,
+): string[] {
+  const errors: string[] = []
+
+  if (!input.name || !input.name.trim()) {
+    errors.push('Event name is required.')
+  }
+
+  if (!input.venue || !input.venue.trim()) {
+    errors.push('Venue is required.')
+  }
+
+  if (!input.description || !input.description.trim()) {
+    errors.push('Description is required.')
+  }
+
+  if (!input.date) {
+    errors.push('Event date is required.')
+  } else {
+    const parsedDate = new Date(input.date)
+    if (Number.isNaN(parsedDate.getTime()) || parsedDate.getTime() <= Date.now()) {
+      errors.push('Event date must be in the future.')
+    }
+  }
+
+  if (
+    !Number.isInteger(input.capacity) ||
+    input.capacity <= 0
+  ) {
+    errors.push('Capacity must be a positive whole number.')
+  }
+
+  return errors
+}
+
+export function createEvent(
+  input: CreateEventInput,
+  organizerId: string,
+): CampusEvent {
+  const errors = validateEventInput(input)
+
+  if (errors.length > 0) {
+    throw new Error(errors.join('|'))
+  }
+
+  const event: CampusEvent = {
+    id: `evt-${Date.now()}`,
+    name: input.name.trim(),
+    description: input.description.trim(),
+    date: input.date,
+    venue: input.venue.trim(),
+    category: input.category,
+    capacity: input.capacity,
+    seatsAvailable: input.capacity,
+    organizerId,
+    cancelled: false,
+  }
+
+  events.push(event)
+
+  return event
+}
+
+export function updateEvent(
+  eventId: string,
+  organizerId: string,
+  input: CreateEventInput,
+): CampusEvent {
+  const event = getEventById(eventId)
+
+  if (!event) {
+    throw new Error('EVENT_NOT_FOUND')
+  }
+
+  if (event.organizerId !== organizerId) {
+    throw new Error('FORBIDDEN')
+  }
+
+  const errors = validateEventInput(input)
+
+  if (errors.length > 0) {
+    throw new Error(errors.join('|'))
+  }
+
+  const registeredCount = event.capacity - event.seatsAvailable
+
+  if (input.capacity < registeredCount) {
+    throw new Error(
+      `Capacity cannot be below the ${registeredCount} existing registrations.`,
+    )
+  }
+
+  event.name = input.name.trim()
+  event.description = input.description.trim()
+  event.date = input.date
+  event.venue = input.venue.trim()
+  event.category = input.category
+
+  event.capacity = input.capacity
+  event.seatsAvailable = input.capacity - registeredCount
+
+  return event
+}
+
+export function cancelEvent(
+  eventId: string,
+  organizerId: string,
+): CampusEvent {
+  const event = getEventById(eventId)
+
+  if (!event) {
+    throw new Error('EVENT_NOT_FOUND')
+  }
+
+  if (event.organizerId !== organizerId) {
+    throw new Error('FORBIDDEN')
+  }
+
+  event.cancelled = true
+
+  return event
 }

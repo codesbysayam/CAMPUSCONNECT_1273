@@ -1,6 +1,4 @@
-// Seed data for registrations, so the "My Registrations" and Organizer
-// pages have something real to display before participants build the
-// actual registration flow (Task 2 and Task 3).
+import { getEventById, isPastEvent, isFullEvent } from './events'
 
 export type RegistrationStatus = 'confirmed' | 'cancelled'
 
@@ -12,11 +10,7 @@ export interface Registration {
   registeredAt: string // ISO date string
 }
 
-// NOTE FOR PARTICIPANTS: this array is the "database" of registrations.
-// Task 2 (Registration) means pushing new items into this array when a
-// student registers. Task 3 (Cancellation) means updating an item's
-// status here. Keep using this same array — don't create a second store.
-export const registrations: Registration[] = [
+export const INITIAL_REGISTRATIONS: Registration[] = [
   {
     id: 'reg-01',
     eventId: 'evt-01',
@@ -40,7 +34,118 @@ export const registrations: Registration[] = [
   },
 ]
 
-/** Simple lookup used by the placeholder "My Registrations" page. */
+export const registrations: Registration[] = INITIAL_REGISTRATIONS.map((r) => ({ ...r }))
+
+export function resetRegistrations(): void {
+  registrations.length = 0
+  INITIAL_REGISTRATIONS.forEach((r) => registrations.push({ ...r }))
+}
+
+/** Simple lookup used by the registrations views. */
 export function getRegistrationsForStudent(studentId: string): Registration[] {
   return registrations.filter((reg) => reg.studentId === studentId)
+}
+
+/** Returns only confirmed, non-cancelled registrations for a student. */
+export function getActiveRegistrationsForStudent(
+  studentId: string,
+): Registration[] {
+  return registrations.filter(
+    (registration) =>
+      registration.studentId === studentId &&
+      registration.status === 'confirmed',
+  )
+}
+
+/** Checks whether a student currently holds an active registration for an event. */
+export function hasActiveRegistration(
+  studentId: string,
+  eventId: string,
+): boolean {
+  return registrations.some(
+    (registration) =>
+      registration.studentId === studentId &&
+      registration.eventId === eventId &&
+      registration.status === 'confirmed',
+  )
+}
+
+/**
+ * Registers a student for an event, enforcing login, event state, capacity, and duplicate checks.
+ */
+export function createRegistration(
+  studentId: string,
+  eventId: string,
+): Registration {
+  if (!studentId || !studentId.trim()) {
+    throw new Error('UNAUTHORIZED')
+  }
+
+  const event = getEventById(eventId)
+  if (!event) {
+    throw new Error('EVENT_NOT_FOUND')
+  }
+
+  if (event.cancelled) {
+    throw new Error('EVENT_CANCELLED')
+  }
+
+  if (isPastEvent(event)) {
+    throw new Error('EVENT_PAST')
+  }
+
+  if (hasActiveRegistration(studentId, eventId)) {
+    throw new Error('ALREADY_REGISTERED')
+  }
+
+  if (isFullEvent(event) || event.seatsAvailable <= 0) {
+    throw new Error('EVENT_FULL')
+  }
+
+  // Decrement seat count
+  event.seatsAvailable -= 1
+
+  const newReg: Registration = {
+    id: `reg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    eventId,
+    studentId,
+    status: 'confirmed',
+    registeredAt: new Date().toISOString(),
+  }
+
+  registrations.push(newReg)
+  return newReg
+}
+
+/**
+ * Cancels an existing registration and frees a seat on the event up to maximum capacity.
+ */
+export function cancelRegistration(
+  registrationId: string,
+  studentId: string,
+): Registration {
+  const registration = registrations.find((r) => r.id === registrationId)
+  if (!registration) {
+    throw new Error('REGISTRATION_NOT_FOUND')
+  }
+
+  if (registration.studentId !== studentId) {
+    throw new Error('FORBIDDEN')
+  }
+
+  if (registration.status === 'cancelled') {
+    return registration
+  }
+
+  registration.status = 'cancelled'
+
+  const event = getEventById(registration.eventId)
+  if (event) {
+    event.seatsAvailable = Math.min(
+      event.capacity,
+      event.seatsAvailable + 1,
+    )
+  }
+
+  return registration
 }

@@ -26,6 +26,9 @@
       "next/navigation": [
         "./next/navigation.ts"
       ],
+      "next/server": [
+        "./next/server.ts"
+      ],
       "next": [
         "./next/index.ts"
       ]

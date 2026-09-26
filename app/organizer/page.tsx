@@ -1,13 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import { events } from '@/data/events'
+import { events, CampusEvent } from '@/data/events'
 import EmptyState from '@/components/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
+import EventForm from '@/components/EventForm'
 
 export default function OrganizerPage() {
   const { currentUser } = useAuth()
+  const [showForm, setShowForm] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<CampusEvent | null>(null)
+  const [, setTick] = useState(0)
 
   if (currentUser.role !== 'organizer') {
     return (
@@ -21,6 +26,28 @@ export default function OrganizerPage() {
   }
 
   const myEvents = events.filter((e) => e.organizerId === currentUser.id)
+
+  const handleCancelEvent = async (event: CampusEvent) => {
+    if (event.cancelled) return
+    const confirmed = window.confirm(`Cancel "${event.name}"?`)
+    if (!confirmed) return
+
+    try {
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizerId: currentUser.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error || 'Unable to cancel event.')
+        return
+      }
+      setTick((t) => t + 1)
+    } catch (err: any) {
+      alert(err.message || 'Unable to cancel event.')
+    }
+  }
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
@@ -38,21 +65,52 @@ export default function OrganizerPage() {
           <span className="eyebrow-tag">organizer console</span>
           <h1 style={{ fontSize: 30, marginTop: 10 }}>Manage your events</h1>
           <p style={{ marginTop: 8 }}>
-            {/* PARTICIPANT TASK (Task 4): wire "New event" up to a form +
-                POST /api/events, and make Edit/Cancel below call
-                PATCH/DELETE on /api/events/[id]. */}
-            This starter shows your seeded events — creating, editing, and
-            cancelling are Task 4.
+            Create and manage events for your club or department.
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          disabled
-          title="Event creation isn't wired up yet — that's Task 4"
-        >
-          + New event
-        </button>
+
+        {!showForm && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingEvent(null)
+              setShowForm(true)
+            }}
+          >
+            + New event
+          </button>
+        )}
       </div>
+
+      {showForm && (
+        <div style={{ marginBottom: 32 }}>
+          <EventForm
+            organizerId={currentUser.id}
+            eventId={editingEvent?.id}
+            initialValues={
+              editingEvent
+                ? {
+                    name: editingEvent.name,
+                    description: editingEvent.description,
+                    date: editingEvent.date,
+                    venue: editingEvent.venue,
+                    category: editingEvent.category,
+                    capacity: editingEvent.capacity,
+                  }
+                : undefined
+            }
+            onSaved={() => {
+              setShowForm(false)
+              setEditingEvent(null)
+              setTick((t) => t + 1)
+            }}
+            onCancel={() => {
+              setShowForm(false)
+              setEditingEvent(null)
+            }}
+          />
+        </div>
+      )}
 
       {myEvents.length === 0 ? (
         <EmptyState
@@ -67,6 +125,7 @@ export default function OrganizerPage() {
               : event.seatsAvailable <= 0
                 ? 'full'
                 : 'open'
+
             return (
               <li
                 key={event.id}
@@ -92,6 +151,7 @@ export default function OrganizerPage() {
                   >
                     {event.name}
                   </Link>
+
                   <div
                     style={{
                       fontSize: 13.5,
@@ -108,21 +168,27 @@ export default function OrganizerPage() {
                     seats
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <StatusBadge status={status} />
+
                   <button
                     className="btn btn-secondary"
-                    disabled
-                    title="Editing isn't wired up yet — that's Task 4"
+                    onClick={() => {
+                      setEditingEvent(event)
+                      setShowForm(true)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
                   >
                     Edit
                   </button>
+
                   <button
                     className="btn btn-secondary"
-                    disabled
-                    title="Cancelling isn't wired up yet — that's Task 4"
+                    disabled={event.cancelled}
+                    onClick={() => handleCancelEvent(event)}
                   >
-                    Cancel
+                    {event.cancelled ? 'Cancelled' : 'Cancel'}
                   </button>
                 </div>
               </li>

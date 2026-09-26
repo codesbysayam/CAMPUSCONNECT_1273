@@ -1,14 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import { getRegistrationsForStudent } from '@/data/registrations'
-import { getEventById } from '@/data/events'
+import {
+  getActiveRegistrationsForStudent,
+  Registration,
+} from '@/data/registrations'
+import { getEventById, isPastEvent } from '@/data/events'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
 
 export default function RegistrationsPage() {
   const { currentUser } = useAuth()
+  const [message, setMessage] = useState<string | null>(null)
+  const [, setTick] = useState(0)
 
   if (currentUser.role !== 'student') {
     return (
@@ -21,95 +27,193 @@ export default function RegistrationsPage() {
     )
   }
 
-  const myRegistrations = getRegistrationsForStudent(currentUser.id)
+  const activeRegistrations = getActiveRegistrationsForStudent(currentUser.id)
+
+  const upcoming = activeRegistrations.filter((registration) => {
+    const event = getEventById(registration.eventId)
+    return event && !event.cancelled && !isPastEvent(event)
+  })
+
+  const past = activeRegistrations.filter((registration) => {
+    const event = getEventById(registration.eventId)
+    return event && isPastEvent(event)
+  })
+
+  const handleCancel = async (id: string) => {
+    setMessage(null)
+    try {
+      const res = await fetch(`/api/registrations/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: currentUser.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setMessage(data.error || 'Failed to cancel registration.')
+        return
+      }
+      setMessage('Registration cancelled successfully.')
+      setTick((t) => t + 1)
+    } catch (err: any) {
+      setMessage(err.message || 'An error occurred during cancellation.')
+    }
+  }
 
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
       <div style={{ marginBottom: 28 }}>
-        <span className="eyebrow-tag">signed up as {currentUser.name}</span>
-        <h1 style={{ fontSize: 30, marginTop: 10 }}>My registrations</h1>
-        <p style={{ marginTop: 8 }}>
-          Everything you've registered for. This starter shows seed data —
-          {/* PARTICIPANT TASK (Task 3): split into upcoming/past sections,
-              and add a working cancel button. */}{' '}
-          separating upcoming from past, and cancelling, are Task 3.
-        </p>
+        <span className="eyebrow-tag">
+          signed up as {currentUser.name}
+        </span>
+
+        <h1 style={{ fontSize: 30, marginTop: 10 }}>
+          My registrations
+        </h1>
+
+        {message && (
+          <p
+            role="status"
+            style={{
+              marginTop: 10,
+              fontSize: 14,
+              color: message.includes('success') ? 'var(--green)' : 'var(--rust)',
+            }}
+          >
+            {message}
+          </p>
+        )}
       </div>
 
-      {myRegistrations.length === 0 ? (
+      <RegistrationSection
+        title="Upcoming"
+        registrations={upcoming}
+        onCancel={handleCancel}
+      />
+
+      <div style={{ marginTop: 36 }}>
+        <RegistrationSection
+          title="Past"
+          registrations={past}
+        />
+      </div>
+    </section>
+  )
+}
+
+function RegistrationSection({
+  title,
+  registrations,
+  onCancel,
+}: {
+  title: string
+  registrations: Registration[]
+  onCancel?: (id: string) => void
+}) {
+  if (registrations.length === 0) {
+    return (
+      <div>
+        <h2 style={{ fontSize: 20, marginBottom: 12 }}>
+          {title}
+        </h2>
+
         <EmptyState
-          title="No registrations yet"
-          description="Once you register for an event, it'll show up here."
-          action={
-            <Link href="/events" className="btn btn-primary">
-              Browse events
-            </Link>
+          title={`No ${title.toLowerCase()} registrations`}
+          description={
+            title === 'Upcoming'
+              ? 'Register for an event to see it here.'
+              : 'Your past registrations will appear here.'
           }
         />
-      ) : (
-        <ul style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {myRegistrations.map((reg) => {
-            const event = getEventById(reg.eventId)
-            if (!event) return null
-            return (
-              <li
-                key={reg.id}
-                className="card-surface"
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 20, marginBottom: 12 }}>
+        {title}
+      </h2>
+
+      <ul
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        {registrations.map((registration) => {
+          const event = getEventById(registration.eventId)
+
+          if (!event || event.cancelled) {
+            return null
+          }
+
+          return (
+            <li
+              key={registration.id}
+              className="card-surface"
+              style={{
+                padding: '18px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 16,
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <Link
+                  href={`/events/${event.id}`}
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 600,
+                    fontSize: 17,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {event.name}
+                </Link>
+
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    color: 'var(--ink-soft)',
+                    marginTop: 4,
+                  }}
+                >
+                  {new Date(event.date).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}{' '}
+                  · {event.venue}
+                </div>
+              </div>
+
+              <div
                 style={{
-                  padding: '18px 20px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 16,
-                  flexWrap: 'wrap',
+                  gap: 12,
                 }}
               >
-                <div>
-                  <Link
-                    href={`/events/${event.id}`}
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 600,
-                      fontSize: 17,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    {event.name}
-                  </Link>
-                  <div
-                    style={{
-                      fontSize: 13.5,
-                      color: 'var(--ink-soft)',
-                      marginTop: 4,
-                    }}
-                  >
-                    {new Date(event.date).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}{' '}
-                    · {event.venue}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <StatusBadge
-                    status={reg.status === 'cancelled' ? 'cancelled' : 'open'}
-                  />
-                  {/* PARTICIPANT TASK (Task 3): wire this up to
-                      DELETE /api/registrations/[id] and update seats. */}
+                <StatusBadge
+                  status={title === 'Past' ? 'past' : 'open'}
+                />
+
+                {onCancel && (
                   <button
                     className="btn btn-secondary"
-                    disabled
-                    title="Cancellation isn't wired up yet — that's Task 3"
+                    onClick={() => onCancel(registration.id)}
                   >
                     Cancel
                   </button>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </section>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
