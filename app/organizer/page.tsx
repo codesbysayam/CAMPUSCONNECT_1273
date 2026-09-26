@@ -32,7 +32,16 @@ export default function OrganizerPage() {
       <section className="shell" style={{ padding: '56px 0' }}>
         <EmptyState
           title="This page is for organizers"
-          description="Switch to an organizer account from the top-right menu to manage events."
+          description="Switch to an organizer account from the top-right menu or sign in through the organizer portal to manage events."
+          action={
+            <Link
+              href="/login/organizer"
+              className="btn btn-primary"
+              style={{ marginTop: 12 }}
+            >
+              Sign In as Organiser →
+            </Link>
+          }
         />
       </section>
     )

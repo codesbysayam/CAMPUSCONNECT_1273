@@ -13,6 +13,9 @@ import EventsPage from '@/app/events/page'
 import EventDetailPage from '@/app/events/[id]/page'
 import OrganizerPage from '@/app/organizer/page'
 import RegistrationsPage from '@/app/registrations/page'
+import LoginPage from '@/app/login/page'
+import StudentLoginPage from '@/app/login/student/page'
+import OrganizerLoginPage from '@/app/login/organizer/page'
 
 export default function App() {
   const [pathname, setPathname] = useState<string>(() => {
@@ -48,6 +51,15 @@ export default function App() {
     }
     if (normalized === '/registrations') {
       return <RegistrationsPage />
+    }
+    if (normalized === '/login') {
+      return <LoginPage />
+    }
+    if (normalized === '/login/student') {
+      return <StudentLoginPage />
+    }
+    if (normalized === '/login/organizer' || normalized === '/login/organiser') {
+      return <OrganizerLoginPage />
     }
 
     return <HomePage />
