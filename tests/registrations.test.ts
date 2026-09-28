@@ -64,8 +64,8 @@ describe('registration flow', () => {
   })
 
   it('rejects registration for past events', () => {
-    // evt-10 is dated 2026-09-01 (before TODAY)
-    expect(() => createRegistration('stu-1', 'evt-10')).toThrow('EVENT_PAST')
+    // evt-04 is dated 2026-09-05 (before TODAY)
+    expect(() => createRegistration('stu-1', 'evt-04')).toThrow('EVENT_PAST')
   })
 
   it('cancelling frees a seat and updates status', () => {

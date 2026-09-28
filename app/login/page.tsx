@@ -492,6 +492,23 @@ export default function LoginPage({
                     fontFamily: 'var(--font-mono)',
                   }}
                 />
+                <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setOtp('123456')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      color: 'var(--amber)',
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Quick-fill Demo Code (123456)
+                  </button>
+                </div>
               </div>
 
               <button

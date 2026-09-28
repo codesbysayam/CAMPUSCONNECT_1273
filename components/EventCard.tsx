@@ -52,7 +52,7 @@ export default function EventCard({ event }: EventCardProps) {
         ? 'full'
         : 'open'
 
-  const image = getEventImage(event.category)
+  const image = getEventImage(event)
   const categoryKey = (event.category || '').trim().toLowerCase()
   const CategoryIcon = CATEGORY_ICONS[categoryKey] || GraduationCap
 
@@ -67,23 +67,31 @@ export default function EventCard({ event }: EventCardProps) {
 
   return (
     <article className="event-card">
-      {/* 1. Event Image / Visual */}
-      <Link
-        href={`/events/${event.id}`}
-        className="event-card__media event-card-image"
-        tabIndex={-1}
-        aria-hidden="true"
-      >
-        <img
-          src={image}
-          alt=""
-          className="event-card__image event-card-image-content"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = '/events/default.svg'
-          }}
-        />
-      </Link>
+      {/* 1. Event Image / Visual Area */}
+      <div className="event-card__media">
+        <Link
+          href={`/events/${event.id}`}
+          className="event-card-image"
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          <img
+            src={image}
+            alt={`${event.name} event`}
+            className="event-card__image"
+            loading="lazy"
+            onError={(e) => {
+              const img = e.currentTarget
+              if (img.dataset.fallbackApplied === 'true') {
+                return
+              }
+              img.dataset.fallbackApplied = 'true'
+              img.src = '/events/default-event.jpg'
+            }}
+          />
+          <div className="event-card__image-overlay" />
+        </Link>
+      </div>
 
       {/* 2. Card Content Body */}
       <div className="event-card__body">

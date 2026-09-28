@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { getEventById, isPastEvent, isFullEvent } from '@/data/events'
+import { getEventImage } from '@/lib/event-images'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
 import RegisterButton from '@/components/RegisterButton'
@@ -57,6 +58,8 @@ export default function EventDetailPage({
         ? 'full'
         : 'open'
 
+  const image = getEventImage(event)
+
   return (
     <section className="shell" style={{ padding: '40px 0 64px' }}>
       <Link
@@ -69,16 +72,44 @@ export default function EventDetailPage({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1.6fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
           gap: 32,
           marginTop: 20,
         }}
         className="hero-grid"
       >
         <div>
+          <div
+            style={{
+              marginBottom: 20,
+              borderRadius: 14,
+              overflow: 'hidden',
+              aspectRatio: '16 / 9',
+              maxHeight: 360,
+              width: '100%',
+              background: '#edf1f5',
+            }}
+          >
+            <img
+              src={image}
+              alt={`${event.name} event`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                const img = e.currentTarget
+                if (img.dataset.fallbackApplied === 'true') return
+                img.dataset.fallbackApplied = 'true'
+                img.src = '/events/default-event.jpg'
+              }}
+            />
+          </div>
+
           <span className="eyebrow-tag">{event.category}</span>
-          <h1 style={{ fontSize: 32, marginTop: 12 }}>{event.name}</h1>
-          <p style={{ marginTop: 16, fontSize: 15.5 }}>{event.description}</p>
+          <h1 style={{ fontSize: 'clamp(24px, 4vw, 34px)', marginTop: 12, lineHeight: 1.2 }}>
+            {event.name}
+          </h1>
+          <p style={{ marginTop: 16, fontSize: 15.5, lineHeight: 1.6, color: 'var(--ink-soft)' }}>
+            {event.description}
+          </p>
         </div>
 
         <aside
