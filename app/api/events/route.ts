@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getUserById } from '@/data/auth'
 import { createEvent, events } from '@/data/events'
+import { getAuthenticatedSession } from '@/lib/session'
 
 export async function GET() {
   return NextResponse.json({ success: true, events })
@@ -8,23 +8,29 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { organizerId, name, description, date, venue, category, capacity } = body
+    const session = getAuthenticatedSession({
+      headers: {
+        cookie: request.headers.get('cookie') || undefined,
+        authorization: request.headers.get('authorization') || undefined,
+      },
+    })
 
-    if (!organizerId) {
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Organizer ID is required.' },
-        { status: 400 },
+        { success: false, error: 'Login required' },
+        { status: 401 },
       )
     }
 
-    const user = getUserById(String(organizerId))
-    if (!user || user.role !== 'organizer') {
+    if (session.userRole !== 'organizer') {
       return NextResponse.json(
         { success: false, error: 'Organizer access required.' },
         { status: 403 },
       )
     }
+
+    const body = await request.json()
+    const { name, description, date, venue, category, capacity } = body
 
     if (!String(name ?? '').trim()) {
       return NextResponse.json(
@@ -77,6 +83,7 @@ export async function POST(request: Request) {
       )
     }
 
+    // Server-enforced organizerId from session
     const event = createEvent(
       {
         name: String(name).trim(),
@@ -86,7 +93,7 @@ export async function POST(request: Request) {
         category,
         capacity: parsedCapacity,
       },
-      organizerId,
+      session.userId,
     )
 
     return NextResponse.json({ success: true, event }, { status: 201 })

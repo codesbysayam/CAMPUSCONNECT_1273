@@ -42,6 +42,10 @@ export function resetRegistrations(): void {
 }
 
 /** Simple lookup used by the registrations views. */
+export function getRegistrationById(registrationId: string): Registration | undefined {
+  return registrations.find((r) => r.id === registrationId)
+}
+
 export function getRegistrationsForStudent(studentId: string): Registration[] {
   return registrations.filter((reg) => reg.studentId === studentId)
 }

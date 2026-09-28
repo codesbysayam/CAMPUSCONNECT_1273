@@ -70,7 +70,6 @@ export default function RegisterButton({
         {
           method: 'POST',
           body: JSON.stringify({
-            studentId: currentUser.id,
             eventId,
           }),
         },

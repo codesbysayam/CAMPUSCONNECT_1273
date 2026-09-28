@@ -4,10 +4,12 @@ import {
   getUserById,
   getUserByEmail,
   validateCredentials,
+  normalizeEmail,
+  findUserByEmail,
 } from '@/data/auth'
 
 describe('User Authentication & Credentials', () => {
-  it('has seeded students and organizers with valid credentials', () => {
+  it('has seeded students and organizers with valid password hashes', () => {
     const students = users.filter((u) => u.role === 'student')
     const organizers = users.filter((u) => u.role === 'organizer')
 
@@ -16,13 +18,13 @@ describe('User Authentication & Credentials', () => {
 
     students.forEach((s) => {
       expect(s.email).toBeTruthy()
-      expect(s.password).toBeTruthy()
+      expect(s.passwordHash).toBeTruthy()
       expect(s.role).toBe('student')
     })
 
     organizers.forEach((o) => {
       expect(o.email).toBeTruthy()
-      expect(o.password).toBeTruthy()
+      expect(o.passwordHash).toBeTruthy()
       expect(o.role).toBe('organizer')
     })
   })
@@ -43,16 +45,16 @@ describe('User Authentication & Credentials', () => {
     expect(res.user?.role).toBe('organizer')
   })
 
-  it('rejects wrong password', () => {
+  it('rejects wrong password with generic error', () => {
     const res = validateCredentials('aditi.rao@campus.edu', 'wrongpass', 'student')
     expect(res.success).toBe(false)
-    expect(res.error).toContain('Invalid password')
+    expect(res.error).toBe('Invalid email or password.')
   })
 
-  it('rejects non-existent email', () => {
+  it('rejects non-existent email with same generic error to prevent enumeration', () => {
     const res = validateCredentials('unknown@campus.edu', 'student123', 'student')
     expect(res.success).toBe(false)
-    expect(res.error).toContain('No account found')
+    expect(res.error).toBe('Invalid email or password.')
   })
 
   it('rejects when student tries to log in via organizer portal', () => {
@@ -67,8 +69,8 @@ describe('User Authentication & Credentials', () => {
     expect(res.error).toContain('This account is registered as a organizer')
   })
 
-  it('finds user by email case-insensitively', () => {
-    const user = getUserByEmail('ADITI.RAO@CAMPUS.EDU')
+  it('finds user by email case-insensitively and ignoring whitespace', () => {
+    const user = findUserByEmail('  ADITI.RAO@CAMPUS.EDU  ')
     expect(user).toBeDefined()
     expect(user?.id).toBe('stu-1')
   })

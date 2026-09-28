@@ -60,7 +60,6 @@ export default function RegistrationsPage() {
         `/api/registrations/${id}`,
         {
           method: 'DELETE',
-          body: JSON.stringify({ studentId: currentUser.id }),
         },
       )
       setMessage('Registration cancelled successfully.')

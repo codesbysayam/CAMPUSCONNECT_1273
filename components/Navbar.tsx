@@ -11,7 +11,6 @@ import {
   LogIn,
   LogOut,
   ChevronDown,
-  User,
 } from 'lucide-react'
 
 const LINKS = [
@@ -23,7 +22,7 @@ const LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const { currentUser, setCurrentUserId, logout, allUsers } = useAuth()
+  const { currentUser, logout } = useAuth()
   const [loginMenuOpen, setLoginMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -274,15 +273,16 @@ export default function Navbar() {
               </div>
             </div>
           ) : (
-            /* Authenticated Profile & Switcher */
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label
+            /* Authenticated Profile */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  fontSize: 13,
-                  color: 'var(--ink-soft)',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: 'var(--foreground)',
                 }}
               >
                 <span
@@ -302,27 +302,8 @@ export default function Navbar() {
                 >
                   {currentUser.role}
                 </span>
-                <select
-                  aria-label="Switch current user"
-                  value={currentUser.id}
-                  onChange={(e) => setCurrentUserId(e.target.value)}
-                  style={{
-                    border: '1.5px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: '6px 8px',
-                    fontSize: 13.5,
-                    background: 'var(--paper-raised)',
-                    color: 'var(--ink)',
-                    maxWidth: 140,
-                  }}
-                >
-                  {allUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.role})
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <span>{currentUser.name}</span>
+              </div>
 
               <button
                 type="button"

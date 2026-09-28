@@ -2,35 +2,55 @@ import { NextResponse } from 'next/server'
 import {
   getRegistrationsForStudent,
   createRegistration,
+  hasActiveRegistration,
 } from '@/data/registrations'
+import { getAuthenticatedSession } from '@/lib/session'
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const studentId = searchParams.get('studentId')
+  const session = getAuthenticatedSession({
+    headers: {
+      cookie: request.headers.get('cookie') || undefined,
+      authorization: request.headers.get('authorization') || undefined,
+    },
+  })
 
-  if (!studentId) {
+  if (!session) {
     return NextResponse.json(
-      { success: false, error: 'studentId is required.' },
-      { status: 400 },
+      { success: false, error: 'Login required' },
+      { status: 401 },
     )
   }
 
-  const studentRegs = getRegistrationsForStudent(studentId)
+  // Server determines studentId exclusively from authenticated session
+  const studentRegs = getRegistrationsForStudent(session.userId)
   return NextResponse.json({ success: true, registrations: studentRegs })
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const studentId = String(body.studentId ?? '')
-    const eventId = String(body.eventId ?? '')
+    const session = getAuthenticatedSession({
+      headers: {
+        cookie: request.headers.get('cookie') || undefined,
+        authorization: request.headers.get('authorization') || undefined,
+      },
+    })
 
-    if (!studentId) {
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Student login required.' },
+        { success: false, error: 'Login required' },
         { status: 401 },
       )
     }
+
+    if (session.userRole !== 'student') {
+      return NextResponse.json(
+        { success: false, error: 'Only students can register for events.' },
+        { status: 403 },
+      )
+    }
+
+    const body = await request.json()
+    const eventId = String(body.eventId ?? '')
 
     if (!eventId) {
       return NextResponse.json(
@@ -39,7 +59,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const registration = createRegistration(studentId, eventId)
+    // Duplicate active registration protection
+    if (hasActiveRegistration(session.userId, eventId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You are already registered for this event.',
+        },
+        { status: 409 },
+      )
+    }
+
+    // NEVER trust studentId from client: source of truth is session.userId
+    const registration = createRegistration(session.userId, eventId)
     return NextResponse.json({ success: true, registration }, { status: 201 })
   } catch (error) {
     const message =

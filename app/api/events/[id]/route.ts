@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getEventById, updateEvent, cancelEvent } from '@/data/events'
+import { getAuthenticatedSession } from '@/lib/session'
 
 export async function PATCH(
   request: Request,
@@ -9,21 +10,24 @@ export async function PATCH(
     const resolvedParams = await Promise.resolve(context.params)
     const id = resolvedParams.id
 
-    const body = await request.json()
-    const {
-      organizerId,
-      name,
-      description,
-      date,
-      venue,
-      category,
-      capacity,
-    } = body
+    const session = getAuthenticatedSession({
+      headers: {
+        cookie: request.headers.get('cookie') || undefined,
+        authorization: request.headers.get('authorization') || undefined,
+      },
+    })
 
-    if (!organizerId) {
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Organizer ID is required.' },
-        { status: 400 },
+        { success: false, error: 'Login required' },
+        { status: 401 },
+      )
+    }
+
+    if (session.userRole !== 'organizer') {
+      return NextResponse.json(
+        { success: false, error: 'Organizer access required.' },
+        { status: 403 },
       )
     }
 
@@ -35,12 +39,19 @@ export async function PATCH(
       )
     }
 
-    if (event.organizerId !== organizerId) {
+    // Server-enforced organizer ownership check
+    if (event.organizerId !== session.userId) {
       return NextResponse.json(
-        { success: false, error: 'You are not allowed to edit this event.' },
+        {
+          success: false,
+          error: "You are not allowed to edit another organizer's event.",
+        },
         { status: 403 },
       )
     }
+
+    const body = await request.json()
+    const { name, description, date, venue, category, capacity } = body
 
     if (!String(name ?? '').trim()) {
       return NextResponse.json(
@@ -97,18 +108,14 @@ export async function PATCH(
       )
     }
 
-    const updatedEvent = updateEvent(
-      id,
-      organizerId,
-      {
-        name: String(name).trim(),
-        description: String(description).trim(),
-        date: parsedDate.toISOString(),
-        venue: String(venue).trim(),
-        category,
-        capacity: parsedCapacity,
-      },
-    )
+    const updatedEvent = updateEvent(id, session.userId, {
+      name: String(name).trim(),
+      description: String(description).trim(),
+      date: parsedDate.toISOString(),
+      venue: String(venue).trim(),
+      category,
+      capacity: parsedCapacity,
+    })
 
     return NextResponse.json({
       success: true,
@@ -146,13 +153,24 @@ export async function DELETE(
     const resolvedParams = await Promise.resolve(context.params)
     const id = resolvedParams.id
 
-    const body = await request.json()
-    const organizerId = String(body.organizerId ?? '')
+    const session = getAuthenticatedSession({
+      headers: {
+        cookie: request.headers.get('cookie') || undefined,
+        authorization: request.headers.get('authorization') || undefined,
+      },
+    })
 
-    if (!organizerId) {
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Organizer ID is required.' },
-        { status: 400 },
+        { success: false, error: 'Login required' },
+        { status: 401 },
+      )
+    }
+
+    if (session.userRole !== 'organizer') {
+      return NextResponse.json(
+        { success: false, error: 'Organizer access required.' },
+        { status: 403 },
       )
     }
 
@@ -164,14 +182,17 @@ export async function DELETE(
       )
     }
 
-    if (event.organizerId !== organizerId) {
+    if (event.organizerId !== session.userId) {
       return NextResponse.json(
-        { success: false, error: 'You are not allowed to cancel this event.' },
+        {
+          success: false,
+          error: "You are not allowed to cancel another organizer's event.",
+        },
         { status: 403 },
       )
     }
 
-    const cancelledEvent = cancelEvent(id, organizerId)
+    const cancelledEvent = cancelEvent(id, session.userId)
     return NextResponse.json({
       success: true,
       event: cancelledEvent,

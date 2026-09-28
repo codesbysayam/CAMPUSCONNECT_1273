@@ -1,55 +1,106 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
-import { users, AppUser, getUserById } from '@/data/auth'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react'
+import { users, AppUser } from '@/data/auth'
+import { apiRequest } from '@/lib/api'
 
 interface AuthContextValue {
   currentUser: AppUser | null
   isAuthenticated: boolean
-  setCurrentUserId: (id: string | null) => void
-  login: (id: string) => void
-  logout: () => void
+  loading: boolean
+  sendLoginOtp: (
+    email: string,
+    pass: string,
+    expectedRole?: string,
+  ) => Promise<{ success: boolean; requiresOtp: boolean; message: string }>
+  verifyOtpAndLogin: (
+    email: string,
+    otp: string,
+  ) => Promise<{ success: boolean; user?: AppUser }>
+  logout: () => Promise<void>
   allUsers: AppUser[]
+  refreshAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUserId, setCurrentUserIdState] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      const loggedIn = localStorage.getItem('campus-connect-logged-in')
-      const saved = localStorage.getItem('campus-connect-user-id')
-      if (loggedIn === 'true' && saved && users.some((u) => u.id === saved)) {
-        return saved
-      }
-    }
-    return null
-  })
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const currentUser = currentUserId ? (getUserById(currentUserId) ?? null) : null
+  const refreshAuth = async () => {
+    try {
+      const data = await apiRequest<{
+        authenticated: boolean
+        user?: AppUser
+      }>('/api/auth/me')
 
-  const setCurrentUserId = (id: string | null) => {
-    setCurrentUserIdState(id)
-    if (typeof window !== 'undefined') {
-      if (id) {
-        localStorage.setItem('campus-connect-logged-in', 'true')
-        localStorage.setItem('campus-connect-user-id', id)
+      if (data.authenticated && data.user) {
+        setCurrentUser(data.user)
       } else {
-        localStorage.removeItem('campus-connect-logged-in')
-        localStorage.removeItem('campus-connect-user-id')
+        setCurrentUser(null)
       }
+    } catch {
+      setCurrentUser(null)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const login = (id: string) => {
-    setCurrentUserId(id)
+  useEffect(() => {
+    refreshAuth()
+  }, [])
+
+  const sendLoginOtp = async (
+    email: string,
+    password: string,
+    expectedRole?: string,
+  ) => {
+    const res = await apiRequest<{
+      success: boolean
+      requiresOtp: boolean
+      message: string
+    }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, expectedRole }),
+    })
+    return res
   }
 
-  const logout = () => {
-    setCurrentUserId(null)
-    if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', '/')
-      window.dispatchEvent(new PopStateEvent('popstate'))
+  const verifyOtpAndLogin = async (email: string, otp: string) => {
+    const res = await apiRequest<{
+      success: boolean
+      authenticated: boolean
+      user: AppUser
+    }>('/api/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    })
+
+    if (res.authenticated && res.user) {
+      setCurrentUser(res.user)
+      return { success: true, user: res.user }
+    }
+    return { success: false }
+  }
+
+  const logout = async () => {
+    try {
+      await apiRequest('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // ignore
+    } finally {
+      setCurrentUser(null)
+      if (typeof window !== 'undefined') {
+        window.history.pushState({}, '', '/')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
     }
   }
 
@@ -58,10 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         currentUser,
         isAuthenticated: !!currentUser,
-        setCurrentUserId,
-        login,
+        loading,
+        sendLoginOtp,
+        verifyOtpAndLogin,
         logout,
         allUsers: users,
+        refreshAuth,
       }}
     >
       {children}
